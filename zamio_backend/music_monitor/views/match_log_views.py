@@ -21,7 +21,7 @@ from rest_framework.response import Response
 
 from accounts.models import AuditLog
 from artists.models import Fingerprint, Track
-from music_monitor.models import AudioDetection, MatchCache, SnippetIngest
+from music_monitor.models import AudioDetection, MatchCache, PlayLog, RoyaltyDistribution, SnippetIngest
 from music_monitor.utils.match_engine import simple_match, simple_match_mp3
 from music_monitor.utils.stream_monitor import StreamMonitor, active_sessions
 from stations.models import Station
@@ -351,16 +351,9 @@ def upload_audio_match(request):
     audio_timestamp = parsed_started or timezone.now()
 
     try:
-        session_uuid = uuid.UUID(chunk_id) if chunk_id else uuid.uuid4()
-    except (ValueError, AttributeError, TypeError):
-        session_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, chunk_id) if chunk_id else uuid.uuid4()
-
-    duration_seconds_value = None
-    if duration_seconds:
-        try:
-            duration_seconds_value = int(duration_seconds)
-        except (TypeError, ValueError):
-            duration_seconds_value = None
+        duration_seconds_value = int(duration_seconds)
+    except (TypeError, ValueError):
+        duration_seconds_value = None
 
     def sync_ingest_metadata(ingest_obj):
         update_fields = []
@@ -656,6 +649,57 @@ def upload_audio_match(request):
                     avg_confidence_score=confidence_score,
                     processed=False
                 )
+                track_duration = track.duration or timezone.timedelta(seconds=180)
+                verification_status = 'verified' if confidence_ratio >= Decimal('0.70') else 'pending'
+
+                playlog = PlayLog.objects.create(
+                    track=track,
+                    station=station,
+                    station_program=None,
+                    source='Radio',
+                    played_at=audio_timestamp,
+                    start_time=audio_timestamp,
+                    stop_time=audio_timestamp + track_duration,
+                    duration=track_duration,
+                    avg_confidence_score=confidence_ratio,
+                    verification_status=verification_status,
+                    payment_status='pending',
+                    royalty_status='pending',
+                    claimed=True,
+                    flagged=False,
+                    active=True,
+                    is_archived=False,
+                    royalty_amount=Decimal('0.00'),
+                )
+
+                base_royalty_rate = Decimal('0.10')
+                confidence_multiplier = max(confidence_ratio, Decimal('0.5'))
+                royalty_amount = (base_royalty_rate * confidence_multiplier).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                playlog.royalty_amount = royalty_amount
+                playlog.save(update_fields=['royalty_amount'])
+
+                if track.artist and hasattr(track.artist, 'user') and track.artist.user:
+                    RoyaltyDistribution.objects.create(
+                        play_log=playlog,
+                        audio_detection=detection,
+                        recipient=track.artist.user,
+                        recipient_type='artist',
+                        gross_amount=royalty_amount,
+                        net_amount=royalty_amount,
+                        currency='GHS',
+                        exchange_rate=Decimal('1.00'),
+                        percentage_split=Decimal('100.00'),
+                        pro_share=Decimal('0.00'),
+                        calculation_metadata={
+                            'confidence_score': str(confidence_ratio),
+                            'base_rate': str(base_royalty_rate),
+                            'source': 'mobile_audio_upload',
+                            'track_id': str(track.id),
+                            'station_id': station.station_id,
+                        },
+                        status='pending',
+                        created_by=request.user,
+                    )
                 if chunk_id:
                     try:
                         SnippetIngest.objects.filter(chunk_id=chunk_id).update(processed=True)

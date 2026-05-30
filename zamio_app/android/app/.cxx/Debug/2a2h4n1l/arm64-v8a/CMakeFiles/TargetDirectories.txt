@@ -1,0 +1,2 @@
+/Users/samawyna/Downloads/zamio_prototype-main/zamio_app/android/app/.cxx/Debug/2a2h4n1l/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/samawyna/Downloads/zamio_prototype-main/zamio_app/android/app/.cxx/Debug/2a2h4n1l/arm64-v8a/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Invited to Join ZamIO</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #1a365d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f7fafc;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #38a169;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+        .invitation-details {
+            background-color: #e6fffa;
+            border-left: 4px solid #38a169;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>You're Invited to Join ZamIO!</h1>
+    </div>
+    
+    <div class="content">
+        <h2>Hello!</h2>
+        
+        <p>{{ inviter.first_name|default:inviter.email }} has invited you to join ZamIO as a {{ user_type }}.</p>
+        
+        <div class="invitation-details">
+            <h3>About ZamIO</h3>
+            <p>ZamIO is a comprehensive music royalty management platform that monitors radio stations, detects music plays, and distributes royalties to artists and publishers.</p>
+            
+            <p><strong>As a {{ user_type }}, you'll be able to:</strong></p>
+            <ul>
+                {% if user_type == "Artist" %}
+                <li>Upload and manage your music catalog</li>
+                <li>Track your music plays across radio stations</li>
+                <li>Monitor your royalty earnings in real-time</li>
+                <li>Manage your profile and music metadata</li>
+                {% elif user_type == "Station" %}
+                <li>Report your playlogs and manage content</li>
+                <li>Monitor compliance with music licensing</li>
+                <li>Access analytics and reporting tools</li>
+                <li>Manage your station profile and stream information</li>
+                {% elif user_type == "Publisher" %}
+                <li>Manage your music catalog and artist relationships</li>
+                <li>Track royalties across your entire portfolio</li>
+                <li>Access comprehensive analytics and reports</li>
+                <li>Manage artist contracts and agreements</li>
+                {% else %}
+                <li>Access platform features based on your role</li>
+                <li>Collaborate with other music industry professionals</li>
+                <li>Track and manage music-related activities</li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        <p>Click the button below to accept the invitation and create your account:</p>
+        
+        <a href="{{ invitation_url }}" class="button">Accept Invitation</a>
+        
+        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+        <p><a href="{{ invitation_url }}">{{ invitation_url }}</a></p>
+        
+        <p>This invitation link will expire in 7 days. If you have any questions, feel free to contact {{ inviter.first_name|default:inviter.email }} or our support team.</p>
+        
+        <p>Welcome to the ZamIO community!</p>
+        
+        <p>Best regards,<br>The ZamIO Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; {{ current_year }} ZamIO. All rights reserved.</p>
+        <p>This is an automated message, please do not reply to this email.</p>
+    </div>
+</body>
+</html>

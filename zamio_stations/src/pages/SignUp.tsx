@@ -1,0 +1,438 @@
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, RadioTower, ArrowRight, Headphones } from 'lucide-react';
+import { isAxiosError } from 'axios';
+
+import { registerStation, type ApiErrorMap } from '../lib/api';
+
+type FieldErrors = Record<string, string[]>;
+
+interface FormState {
+  firstName: string;
+  lastName: string;
+  stationName: string;
+  email: string;
+  country: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+  agreeToTerms: boolean;
+}
+
+const INITIAL_FORM_STATE: FormState = {
+  firstName: '',
+  lastName: '',
+  stationName: '',
+  email: '',
+  country: '',
+  phoneNumber: '',
+  password: '',
+  confirmPassword: '',
+  agreeToTerms: false,
+};
+
+const normalizeErrors = (errors?: ApiErrorMap): FieldErrors => {
+  if (!errors) return {};
+  return Object.entries(errors).reduce<FieldErrors>((acc, [key, value]) => {
+    if (!value) return acc;
+    if (Array.isArray(value)) {
+      acc[key] = value.map(String);
+    } else {
+      acc[key] = [String(value)];
+    }
+    return acc;
+  }, {} as FieldErrors);
+};
+
+const countryDisplayMap: Record<string, string> = {
+  ghana: 'Ghana',
+  nigeria: 'Nigeria',
+  kenya: 'Kenya',
+  'south-africa': 'South Africa',
+  uk: 'United Kingdom',
+  usa: 'United States',
+  canada: 'Canada',
+  other: 'Other',
+};
+
+const SignUp = () => {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formData, setFormData] = useState<FormState>(INITIAL_FORM_STATE);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const serverErrorKeyMap: Record<keyof FormState, string[]> = {
+    firstName: ['first_name'],
+    lastName: ['last_name'],
+    stationName: ['station_name'],
+    email: ['email', 'detail'],
+    country: ['country'],
+    phoneNumber: ['phone'],
+    password: ['password'],
+    confirmPassword: ['password2'],
+    agreeToTerms: ['agreeToTerms'],
+  };
+
+  const hasFieldError = useMemo(() => (field: string) => fieldErrors[field]?.length > 0, [fieldErrors]);
+
+  const inputClass = (field: string, extra?: string) =>
+    `w-full rounded-lg border ${
+      hasFieldError(field)
+        ? 'border-red-400 focus:border-red-400 focus:ring-red-400'
+        : 'border-white/20 focus:border-indigo-400 focus:ring-indigo-400'
+    } bg-slate-800/50 px-4 py-3 ${extra ?? ''} text-white placeholder:text-slate-400 focus:outline-none focus:ring-1`;
+
+  const renderFieldErrors = (field: string) =>
+    fieldErrors[field]?.map((message, index) => (
+      <p key={`${field}-${index}`} className="mt-1 text-xs text-red-400">
+        {message}
+      </p>
+    ));
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type, checked } = event.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+
+    const relatedServerKeys = serverErrorKeyMap[name as keyof FormState] ?? [];
+    if (fieldErrors[name] || relatedServerKeys.some((key) => fieldErrors[key])) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        relatedServerKeys.forEach((key) => {
+          if (next[key]) {
+            delete next[key];
+          }
+        });
+        return next;
+      });
+    }
+    setGeneralError(null);
+  };
+
+  const normalizeCountry = (value: string) => {
+    if (!value) return undefined;
+    return countryDisplayMap[value] ?? value;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const validationErrors: FieldErrors = {};
+    if (!formData.stationName.trim()) {
+      validationErrors.station_name = ['Station name is required'];
+    }
+    if (formData.password !== formData.confirmPassword) {
+      validationErrors.password = ['Passwords do not match'];
+      validationErrors.password2 = ['Passwords do not match'];
+    }
+    if (!formData.agreeToTerms) {
+      validationErrors.agreeToTerms = ['You must agree to the Terms of Service to continue'];
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setGeneralError('Please correct the highlighted fields and try again.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setGeneralError(null);
+    setFieldErrors({});
+
+    const normalizedEmail = formData.email.trim().toLowerCase();
+
+    try {
+      await registerStation({
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        station_name: formData.stationName.trim(),
+        email: normalizedEmail,
+        phone: formData.phoneNumber.trim(),
+        country: normalizeCountry(formData.country),
+        password: formData.password,
+        password2: formData.confirmPassword,
+      });
+
+      navigate({
+        pathname: '/verify-email',
+        search: normalizedEmail ? `?email=${encodeURIComponent(normalizedEmail)}` : '',
+      }, {
+        state: { email: normalizedEmail },
+      });
+    } catch (error) {
+      if (isAxiosError(error) && error.response) {
+        const data = error.response.data as { message?: string; errors?: ApiErrorMap; detail?: string };
+        const normalized = normalizeErrors(data.errors);
+        if (data.detail && !normalized.detail) {
+          normalized.detail = [data.detail];
+        }
+        setFieldErrors(normalized);
+        setGeneralError(data.message || data.detail || 'Unable to create your account.');
+      } else {
+        setGeneralError('An unexpected error occurred. Please try again later.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen flex items-center justify-center bg-slate-950 text-white overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-950 to-black" />
+      <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/20 blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-violet-500/10 blur-2xl" />
+
+      <div className="relative z-10 w-full max-w-md mx-4">
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center space-x-3 mb-4">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-300">
+              <RadioTower className="h-6 w-6" />
+            </span>
+            <span className="text-2xl font-semibold tracking-tight">Zamio Stations</span>
+          </Link>
+          <h2 className="text-3xl font-semibold">Register your station</h2>
+          <p className="mt-2 text-slate-400">Join Ghana's premier royalty tracking network</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-white/10 bg-slate-900/60 p-8 shadow-2xl backdrop-blur">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-slate-200 mb-2">
+                  First name
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  required
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={inputClass('first_name')}
+                  placeholder="John"
+                />
+                {renderFieldErrors('first_name')}
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-slate-200 mb-2">
+                  Last name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  required
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={inputClass('last_name')}
+                  placeholder="Doe"
+                />
+                {renderFieldErrors('last_name')}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="stationName" className="block text-sm font-medium text-slate-200 mb-2">
+                Station name
+              </label>
+              <input
+                id="stationName"
+                name="stationName"
+                type="text"
+                required
+                value={formData.stationName}
+                onChange={handleChange}
+                className={inputClass('station_name')}
+                placeholder="Zamio Radio"
+              />
+              {renderFieldErrors('station_name')}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-slate-200 mb-2">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className={inputClass('email')}
+                placeholder="station@radiostation.com"
+              />
+              {renderFieldErrors('email')}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-slate-200 mb-2">
+                  Country
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className={inputClass('country')}
+                >
+                  <option value="">Select country</option>
+                  <option value="ghana">Ghana</option>
+                  <option value="nigeria">Nigeria</option>
+                  <option value="kenya">Kenya</option>
+                  <option value="south-africa">South Africa</option>
+                  <option value="uk">United Kingdom</option>
+                  <option value="usa">United States</option>
+                  <option value="canada">Canada</option>
+                  <option value="other">Other</option>
+                </select>
+                {renderFieldErrors('country')}
+              </div>
+              <div>
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-slate-200 mb-2">
+                  Phone number
+                </label>
+                <input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  className={inputClass('phone')}
+                  placeholder="+233 XX XXX XXXX"
+                />
+                {renderFieldErrors('phone')}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-200 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={inputClass('password', 'pr-12')}
+                  placeholder="Create a strong password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {renderFieldErrors('password')}
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-200 mb-2">
+                Confirm password
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={inputClass('password2', 'pr-12')}
+                  placeholder="Confirm your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {renderFieldErrors('password2')}
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="agreeToTerms"
+                id="agreeToTerms"
+                checked={formData.agreeToTerms}
+                onChange={handleChange}
+                className="rounded border-white/20 bg-slate-800 text-indigo-500 focus:ring-indigo-400"
+              />
+              <label htmlFor="agreeToTerms" className="ml-2 text-sm text-slate-300">
+                I agree to the Terms of Service and Privacy Policy
+              </label>
+            </div>
+            {renderFieldErrors('agreeToTerms')}
+
+            {generalError && (
+              <div className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                {generalError}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="w-full inline-flex items-center justify-center rounded-lg bg-indigo-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 disabled:opacity-60"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Creating account…' : 'Create account'}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </button>
+
+          <div className="text-center text-sm text-slate-400">
+            Already have a station account?{' '}
+            <Link to="/signin" className="font-medium text-indigo-400 hover:text-indigo-300">
+              Sign in
+            </Link>
+          </div>
+
+          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-4">
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <Headphones className="h-4 w-4 text-indigo-400" />
+              <span className="text-sm font-medium text-indigo-300">Station Benefits</span>
+            </div>
+            <p className="text-xs text-slate-300 text-center">
+              Monitor airplay across FM, TV & digital • Track royalty earnings • Generate compliance reports
+            </p>
+          </div>
+        </form>
+
+        <div className="mt-8 text-center text-sm text-slate-500">
+          <p>
+            By creating an account, you agree to our{' '}
+            <Link to="/terms" className="text-indigo-400 hover:text-indigo-300">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" className="text-indigo-400 hover:text-indigo-300">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SignUp;
+

@@ -1,0 +1,28 @@
+{
+  "buildFiles": [
+    "/Users/samawyna/development/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/samawyna/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/samawyna/Downloads/zamio_prototype-main/zamio_app/android/app/.cxx/Debug/2a2h4n1l/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/samawyna/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/samawyna/Downloads/zamio_prototype-main/zamio_app/android/app/.cxx/Debug/2a2h4n1l/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {},
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "/Users/samawyna/Library/Android/sdk/ndk/26.3.11579264/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang.lld",
+      "cppCompilerExecutable": "/Users/samawyna/Library/Android/sdk/ndk/26.3.11579264/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++.lld"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": []
+}

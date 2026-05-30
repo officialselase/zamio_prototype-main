@@ -1,0 +1,44 @@
+You're Invited to Join ZamIO!
+
+Hello!
+
+{{ inviter.first_name|default:inviter.email }} has invited you to join ZamIO as a {{ user_type }}.
+
+About ZamIO:
+ZamIO is a comprehensive music royalty management platform that monitors radio stations, detects music plays, and distributes royalties to artists and publishers.
+
+As a {{ user_type }}, you'll be able to:
+{% if user_type == "Artist" %}
+- Upload and manage your music catalog
+- Track your music plays across radio stations
+- Monitor your royalty earnings in real-time
+- Manage your profile and music metadata
+{% elif user_type == "Station" %}
+- Report your playlogs and manage content
+- Monitor compliance with music licensing
+- Access analytics and reporting tools
+- Manage your station profile and stream information
+{% elif user_type == "Publisher" %}
+- Manage your music catalog and artist relationships
+- Track royalties across your entire portfolio
+- Access comprehensive analytics and reports
+- Manage artist contracts and agreements
+{% else %}
+- Access platform features based on your role
+- Collaborate with other music industry professionals
+- Track and manage music-related activities
+{% endif %}
+
+Please click the following link to accept the invitation and create your account:
+{{ invitation_url }}
+
+This invitation link will expire in 7 days. If you have any questions, feel free to contact {{ inviter.first_name|default:inviter.email }} or our support team.
+
+Welcome to the ZamIO community!
+
+Best regards,
+The ZamIO Team
+
+---
+© {{ current_year }} ZamIO. All rights reserved.
+This is an automated message, please do not reply to this email.

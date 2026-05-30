@@ -1,0 +1,21 @@
+{
+  "name": "zamio_super",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "zamio_frontend",
+    "zamio_stations",
+    "zamio_publisher",
+    "zamio_admin"
+  ],
+  "dependencies": {
+    "@tailwindcss/line-clamp": "^0.4.4",
+    "axios": "^1.12.2",
+    "lucide-react": "^0.545.0",
+    "react-router-dom": "^7.9.4",
+    "recharts": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2"
+  }
+}

@@ -1,0 +1,16 @@
+{{ site_name }} Notification
+
+{{ email_type|upper }}
+
+Hi {% if user.first_name %}{{ user.first_name }}{% else %}there{% endif %},
+
+{{ message }}
+
+If you have any questions or need assistance, please don't hesitate to contact our support team.
+
+Best regards,
+The ZamIO Team
+
+---
+© {{ current_year }} ZamIO. All rights reserved.
+This is an automated message, please do not reply to this email.

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #1a365d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f7fafc;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+        .notification-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        .notification { background-color: #bee3f8; color: #1a365d; }
+        .alert { background-color: #fed7d7; color: #742a2a; }
+        .update { background-color: #c6f6d5; color: #22543d; }
+        .warning { background-color: #feebc8; color: #744210; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ site_name }} Notification</h1>
+    </div>
+    
+    <div class="content">
+        <div class="notification-type {{ email_type }}">{{ email_type }}</div>
+        
+        <h2>Hi {% if user.first_name %}{{ user.first_name }}{% else %}there{% endif %},</h2>
+        
+        <div>
+            {{ message|linebreaks }}
+        </div>
+        
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        
+        <p>Best regards,<br>The ZamIO Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; {{ current_year }} ZamIO. All rights reserved.</p>
+        <p>This is an automated message, please do not reply to this email.</p>
+    </div>
+</body>
+</html>

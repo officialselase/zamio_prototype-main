@@ -1,0 +1,26 @@
+Welcome to ZamIO!
+
+Hi {{ user.first_name|default:"there" }},
+
+Welcome to ZamIO! We're thrilled to have you join our music royalty management platform.
+
+Your account has been successfully created and you're now part of a community that's revolutionizing how music royalties are tracked and distributed.
+
+As a {{ user_type }}, you can now:
+{% for feature in platform_features %}
+- {{ feature }}
+{% endfor %}
+
+Ready to get started? Log in to your account and explore all the features available to you:
+http://{{ base_url|default:"localhost:9001" }}/sign-in
+
+If you have any questions or need assistance getting started, our support team is here to help. Don't hesitate to reach out!
+
+Thank you for choosing ZamIO. We're excited to see what you'll accomplish on our platform.
+
+Best regards,
+The ZamIO Team
+
+---
+© {{ current_year }} ZamIO. All rights reserved.
+This is an automated message, please do not reply to this email.

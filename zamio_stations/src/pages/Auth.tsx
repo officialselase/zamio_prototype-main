@@ -1,0 +1,2 @@
+import React from 'react'
+export default function Auth(){ return (<div className='max-w-md mx-auto'><h2 className='text-2xl font-bold mb-4'>Sign in</h2><form className='space-y-3 bg-white dark:bg-gray-800 p-4 rounded'><input placeholder='Email' className='w-full p-2 rounded border' /><input placeholder='Password' type='password' className='w-full p-2 rounded border' /><button className='px-4 py-2 rounded bg-purple-600 text-white'>Sign in</button></form></div>) }

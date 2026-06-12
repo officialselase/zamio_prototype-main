@@ -305,11 +305,12 @@ class SyncService extends ChangeNotifier {
   }
 
   Future<void> _handleUploadFailure(AudioCapture capture, {String? error}) async {
+    final newRetryCount = capture.retryCount + 1;
     await _db.incrementRetryCount(capture.id);
     
-    if (capture.retryCount >= _maxRetryAttempts) {
+    if (newRetryCount >= _maxRetryAttempts) {
       await _db.updateCaptureStatus(
-        capture.id, 
+        capture.id,
         CaptureStatus.failed,
         errorMessage: error ?? 'Max retry attempts exceeded',
       );
@@ -321,7 +322,7 @@ class SyncService extends ChangeNotifier {
       );
     } else {
       await _db.updateCaptureStatus(
-        capture.id, 
+        capture.id,
         CaptureStatus.retrying,
         errorMessage: error,
       );

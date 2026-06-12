@@ -33,8 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-insecure-secret-change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # Rate limiting (disable in development to avoid issues during testing)
 RATE_LIMIT_ENABLED = os.environ.get('RATE_LIMIT_ENABLED', 'False').lower() == 'true'
@@ -68,7 +67,7 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '0')) or None
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() == 'true'
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Zamio <no-reply@localhost>')
-BASE_URL = os.environ.get('BASE_URL', "0.0.0.0:90")
+BASE_URL = os.environ.get('BASE_URL', 'http://localhost:8000')
 
 
 # Application definition

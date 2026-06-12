@@ -15,6 +15,22 @@ from artists.serializers import ArtistMatchCacheSerializer, ArtistPlayLogSeriali
 from music_monitor.models import MatchCache, PlayLog
 
 
+def _resolve_artist_from_request(request, artist_id):
+    if artist_id:
+        try:
+            return Artist.objects.get(artist_id=artist_id)
+        except Artist.DoesNotExist:
+            return None
+
+    if hasattr(request.user, 'artists'):
+        return request.user.artists.filter(active=True).first() or request.user.artists.first()
+
+    if hasattr(request.user, 'artist_profile'):
+        return getattr(request.user, 'artist_profile', None)
+
+    return None
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_play_logs(request, station_id):
@@ -54,10 +70,8 @@ def get_all_track_playlog_view(request):
     match_sort_by = request.query_params.get('match_sort_by', 'matched_at')
     match_sort_order = (request.query_params.get('match_sort_order', 'desc') or 'desc').lower()
 
-    # Validate artist
-    try:
-        artist = Artist.objects.get(artist_id=artist_id)
-    except Artist.DoesNotExist:
+    artist = _resolve_artist_from_request(request, artist_id)
+    if not artist:
         errors['artist'] = ['Artist not found.']
 
     if errors:

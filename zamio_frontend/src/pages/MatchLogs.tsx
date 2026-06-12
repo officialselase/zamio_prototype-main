@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, Eye, Clock, Radio, Music, TrendingUp } from 'lucide-react';
 
-import { useAuth } from '../lib/auth';
+import { getArtistId, useAuth } from '../lib/auth';
 import {
   ArtistLogPagination,
   ArtistLogsPayload,
@@ -131,15 +131,7 @@ const getMatchStatusClasses = (status: string | null | undefined) => {
 
 const MatchLogsPage = () => {
   const { user } = useAuth();
-  const artistId = useMemo(() => {
-    if (user && typeof user === 'object' && user !== null) {
-      const candidate = user['artist_id'];
-      if (typeof candidate === 'string' && candidate.length > 0) {
-        return candidate;
-      }
-    }
-    return null;
-  }, [user]);
+  const artistId = useMemo(() => getArtistId(), []);
 
   const [activeTab, setActiveTab] = useState<TabKey>('playlogs');
   const [playLogs, setPlayLogs] = useState<ArtistPlayLogRecord[]>([]);

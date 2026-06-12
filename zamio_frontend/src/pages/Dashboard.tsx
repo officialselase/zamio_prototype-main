@@ -20,15 +20,18 @@ import {
 } from 'lucide-react';
 
 import HoverCard from '../components/HoverCard';
-import { useAuth } from '../lib/auth';
+import { getArtistId } from '../lib/auth';
 import {
   fetchArtistDashboard,
+  fetchArtistLogs,
   type ArtistDashboardPayload,
   type ArtistDashboardRegionStat,
   type ArtistDashboardSeriesPoint,
   type ArtistDashboardStationBreakdown,
   type ArtistDashboardTopSong,
   type ArtistDashboardPerformanceScore,
+  type ArtistMatchLogRecord,
+  type ArtistPlayLogRecord,
 } from '../lib/api';
 
 const resolveErrorMessage = (error: unknown): string => {
@@ -83,16 +86,7 @@ const resolveErrorMessage = (error: unknown): string => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const artistId = useMemo(() => {
-    if (user && typeof user === 'object' && user !== null) {
-      const candidate = user['artist_id'];
-      if (typeof candidate === 'string' && candidate.length > 0) {
-        return candidate;
-      }
-    }
-    return null;
-  }, [user]);
+  const artistId = useMemo(() => getArtistId(), []);
 
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [selectedRegion, setSelectedRegion] = useState('all');
@@ -119,6 +113,8 @@ const Dashboard = () => {
     y: 0
   });
   const [dashboardData, setDashboardData] = useState<ArtistDashboardPayload | null>(null);
+  const [recentPlayLogs, setRecentPlayLogs] = useState<ArtistPlayLogRecord[]>([]);
+  const [recentMatchLogs, setRecentMatchLogs] = useState<ArtistMatchLogRecord[]>([]);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
 
@@ -353,9 +349,31 @@ const Dashboard = () => {
     setViewTransition(true);
 
     try {
-      const envelope = await fetchArtistDashboard(artistId, { period: selectedPeriod });
+      const [dashboardEnvelope, logsEnvelope] = await Promise.all([
+        fetchArtistDashboard(artistId, { period: selectedPeriod }),
+        fetchArtistLogs({
+          artistId,
+          playPage: 1,
+          matchPage: 1,
+          playPageSize: 5,
+          matchPageSize: 5,
+          playSortBy: 'matched_at',
+          playSortOrder: 'desc',
+          matchSortBy: 'matched_at',
+          matchSortOrder: 'desc',
+        }),
+      ]);
+
+      const envelope = dashboardEnvelope;
       const payload = (envelope?.data ?? null) as ArtistDashboardPayload | null;
       setDashboardData(payload);
+
+      const logsPayload = (logsEnvelope?.data ?? null) as {
+        playLogs?: { results?: ArtistPlayLogRecord[] };
+        matchLogs?: { results?: ArtistMatchLogRecord[] };
+      } | null;
+      setRecentPlayLogs(logsPayload?.playLogs?.results ?? []);
+      setRecentMatchLogs(logsPayload?.matchLogs?.results ?? []);
 
       if (payload?.ghanaRegions) {
         setSelectedRegion((prevRegion) => {
@@ -369,6 +387,8 @@ const Dashboard = () => {
     } catch (error) {
       const message = resolveErrorMessage(error);
       setDashboardError(message);
+      setRecentPlayLogs([]);
+      setRecentMatchLogs([]);
     } finally {
       setIsLoadingDashboard(false);
       setViewTransition(false);
@@ -783,6 +803,62 @@ const Dashboard = () => {
 
           {/* Right Column - Sidebar widgets */}
           <div className="space-y-6">
+            {/* Recent Activity */}
+            <div className="bg-gradient-to-br from-slate-50/90 via-indigo-50/80 to-cyan-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100 flex items-center">
+                  <Activity className="w-5 h-5 mr-2 text-indigo-500" />
+                  Recent Activity
+                </h2>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Latest PlayLogs</p>
+                  <div className="space-y-3">
+                    {recentPlayLogs.slice(0, 3).map((log) => (
+                      <div key={log.id} className="rounded-lg border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{log.track_title}</p>
+                            <p className="truncate text-xs text-gray-600 dark:text-gray-400">{log.station_name}</p>
+                          </div>
+                          <span className="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            ₵{Number(log.royalty_amount ?? 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {!recentPlayLogs.length && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">No playlogs yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Latest MatchLogs</p>
+                  <div className="space-y-3">
+                    {recentMatchLogs.slice(0, 3).map((log) => (
+                      <div key={log.id} className="rounded-lg border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{log.song}</p>
+                            <p className="truncate text-xs text-gray-600 dark:text-gray-400">{log.station}</p>
+                          </div>
+                          <span className="flex-shrink-0 rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                            {log.status ?? 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {!recentMatchLogs.length && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">No matchlogs yet.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Station Breakdown */}
             <div className="bg-gradient-to-br from-amber-50/90 via-yellow-50/80 to-orange-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-amber-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
               <div className="flex items-center justify-between mb-6">

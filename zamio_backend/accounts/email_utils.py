@@ -11,6 +11,8 @@ from typing import List, Optional, Dict, Any
 from django.contrib.auth import get_user_model
 from django.conf import settings
 
+from .link_utils import build_absolute_url
+
 from .tasks import (
     queue_email_verification,
     queue_password_reset_email,
@@ -285,7 +287,7 @@ def send_verification_reminder_email(user: User, base_url: Optional[str] = None)
             'Priority support',
             'Dispute resolution'
         ],
-        'verification_url': f"{base_url}/profile/verification" if base_url else None
+        'verification_url': build_absolute_url(base_url, '/profile/verification') if base_url else None
     }
     
     return send_notification_to_users(

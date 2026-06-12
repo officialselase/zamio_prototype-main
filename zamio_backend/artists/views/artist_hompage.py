@@ -15,6 +15,22 @@ from artists.models import Artist
 from music_monitor.models import PlayLog, StreamLog
 from stations.models import Station
 
+
+def _resolve_artist_from_request(request, artist_id):
+    if artist_id:
+        try:
+            return Artist.objects.get(artist_id=artist_id)
+        except Artist.DoesNotExist:
+            return None
+
+    if hasattr(request.user, 'artists'):
+        return request.user.artists.filter(active=True).first() or request.user.artists.first()
+
+    if hasattr(request.user, 'artist_profile'):
+        return getattr(request.user, 'artist_profile', None)
+
+    return None
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 @authentication_classes([JWTAuthentication, TokenAuthentication])
@@ -24,12 +40,9 @@ def get_artist_homedata(request):
     period = request.query_params.get('period', 'all-time')
     sd_str, ed_str = request.query_params.get('start_date'), request.query_params.get('end_date')
 
-    if not artist_id:
-        errors['artist_id'] = ["Artist ID is required"]
-    try:
-        artist = Artist.objects.get(artist_id=artist_id)
-    except Artist.DoesNotExist:
-        errors['artist_id'] = ['Artist does not exist']
+    artist = _resolve_artist_from_request(request, artist_id)
+    if not artist:
+        errors['artist_id'] = ['Artist ID is required or artist profile not found.']
 
     now = timezone.now()
     start_date = end_date = None

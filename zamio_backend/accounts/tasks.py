@@ -27,6 +27,7 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from accounts.models import AuditLog
+from accounts.link_utils import build_absolute_url
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -96,12 +97,12 @@ def send_email_verification_task(self, user_id: int, verification_token: str = N
         code_expires_at = timezone.now() + timedelta(minutes=15)
         token_expires_at = timezone.now() + timedelta(minutes=60)
         
-        # Use provided base_url or fall back to settings
-        if not base_url:
-            base_url = getattr(settings, 'BASE_URL', 'localhost:9001')
-        
         # Generate verification URL
-        verification_url = f"http://{base_url}/verify-email?token={verification_token}&email={user.email}"
+        verification_url = build_absolute_url(
+            base_url,
+            '/verify-email',
+            {'token': verification_token, 'email': user.email},
+        )
         
         # Prepare email context with both methods
         context = {
@@ -230,12 +231,12 @@ def send_password_reset_email_task(self, user_id: int, reset_token: str = None,
         code_expires_at = timezone.now() + timedelta(minutes=15)
         token_expires_at = timezone.now() + timedelta(minutes=60)
         
-        # Use provided base_url or fall back to settings
-        if not base_url:
-            base_url = getattr(settings, 'BASE_URL', 'localhost:9001')
-        
         # Generate reset URL
-        reset_url = f"http://{base_url}/reset-password?token={reset_token}&email={user.email}"
+        reset_url = build_absolute_url(
+            base_url,
+            '/reset-password',
+            {'token': reset_token, 'email': user.email},
+        )
         
         # Prepare email context with both methods
         context = {
@@ -355,12 +356,12 @@ def send_user_invitation_email_task(self, inviter_user_id: int, invitee_email: s
     try:
         inviter = User.objects.get(id=inviter_user_id)
         
-        # Use provided base_url or fall back to settings
-        if not base_url:
-            base_url = getattr(settings, 'BASE_URL', 'localhost:9001')
-        
         # Generate invitation URL
-        invitation_url = f"http://{base_url}/accept-invitation?token={invitation_token}&email={invitee_email}&type={user_type}"
+        invitation_url = build_absolute_url(
+            base_url,
+            '/accept-invitation',
+            {'token': invitation_token, 'email': invitee_email, 'type': user_type},
+        )
         
         # Prepare email context
         context = {

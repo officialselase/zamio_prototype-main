@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import tempfile
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
@@ -397,6 +398,11 @@ def upload_audio_match(request):
                 return Response(response_payload, status=status.HTTP_200_OK)
 
     processing_started = timezone.now()
+    session_uuid = (
+        uuid.uuid5(uuid.NAMESPACE_URL, f"mobile-upload:{chunk_id}")
+        if chunk_id
+        else uuid.uuid4()
+    )
 
     try:
         try:
@@ -441,7 +447,7 @@ def upload_audio_match(request):
                         **{'vn': None, 'sn': None}  # No video, no subtitles
                     )
                     .overwrite_output()
-                    .run(capture_stdout=True, capture_stderr=True)
+                    .run(capture_stdout=True, capture_stderr=True, timeout=30)
                 )
                 logger.info(f"FFmpeg conversion successful: {temp_out_path}")
                 
@@ -455,6 +461,24 @@ def upload_audio_match(request):
                     
                 logger.info(f"Converted file size: {output_size} bytes")
                     
+            except subprocess.TimeoutExpired:
+                logger.error(f"FFmpeg conversion timed out for {temp_in_path}")
+                
+                # Clean up temp files
+                try:
+                    os.remove(temp_in_path)
+                    if os.path.exists(temp_out_path):
+                        os.remove(temp_out_path)
+                except Exception:
+                    pass
+                
+                return Response(
+                    {
+                        'error': 'Audio format conversion timed out',
+                        'detail': 'Could not convert uploaded audio within 30 seconds.'
+                    },
+                    status=status.HTTP_408_REQUEST_TIMEOUT
+                )
             except ffmpeg.Error as e:
                 error_msg = e.stderr.decode() if e.stderr else str(e)
                 logger.error(f"FFmpeg conversion failed: {error_msg}")

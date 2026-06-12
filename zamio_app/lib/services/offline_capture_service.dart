@@ -11,7 +11,8 @@ import 'database_service.dart';
 import 'connectivity_service.dart';
 
 class OfflineCaptureService extends ChangeNotifier {
-  static final OfflineCaptureService _instance = OfflineCaptureService._internal();
+  static final OfflineCaptureService _instance =
+      OfflineCaptureService._internal();
   factory OfflineCaptureService() => _instance;
   OfflineCaptureService._internal();
 
@@ -26,7 +27,7 @@ class OfflineCaptureService extends ChangeNotifier {
   bool _isCapturing = false;
   String? _currentStationId;
   CaptureSettings _settings = const CaptureSettings();
-  
+
   // Current capture state
   AudioCapture? _currentCapture;
   String? _currentFilePath;
@@ -37,7 +38,7 @@ class OfflineCaptureService extends ChangeNotifier {
   int _totalCapturesCompleted = 0;
   int _totalCapturesFailed = 0;
   int _currentStorageUsedMB = 0;
-  
+
   // Detection results
   int _detectionsToday = 0;
   int _successfulDetectionsToday = 0;
@@ -51,21 +52,22 @@ class OfflineCaptureService extends ChangeNotifier {
   CaptureSettings get settings => _settings;
   AudioCapture? get currentCapture => _currentCapture;
   DateTime? get currentCaptureStartTime => _currentCaptureStartTime;
-  
+
   int get totalCapturesCreated => _totalCapturesCreated;
   int get totalCapturesCompleted => _totalCapturesCompleted;
   int get totalCapturesFailed => _totalCapturesFailed;
   int get currentStorageUsedMB => _currentStorageUsedMB;
-  
+
   // Detection stats
   int get detectionsToday => _detectionsToday;
   int get successfulDetectionsToday => _successfulDetectionsToday;
   String? get lastDetectionStatus => _lastDetectionStatus;
   String? get lastMatchedSong => _lastMatchedSong;
-  
+
   double get captureProgress {
     if (_currentCaptureStartTime == null || !_isCapturing) return 0.0;
-    final elapsed = DateTime.now().difference(_currentCaptureStartTime!).inSeconds;
+    final elapsed =
+        DateTime.now().difference(_currentCaptureStartTime!).inSeconds;
     return math.min(elapsed / _settings.durationSeconds, 1.0);
   }
 
@@ -74,26 +76,26 @@ class OfflineCaptureService extends ChangeNotifier {
 
     try {
       debugPrint('Initializing OfflineCaptureService...');
-      
+
       // Close recorder if it was previously opened
       try {
         await _recorder.closeRecorder();
       } catch (_) {
         // Ignore errors if recorder wasn't open
       }
-      
+
       await _recorder.openRecorder();
       debugPrint('Recorder opened successfully');
-      
+
       await _loadSettings();
       await _updateStatistics();
-      
+
       // Start periodic cleanup
       _cleanupTimer = Timer.periodic(
         const Duration(hours: 1),
         (_) => _performCleanup(),
       );
-      
+
       _isInitialized = true;
       debugPrint('OfflineCaptureService initialized');
       notifyListeners();
@@ -115,13 +117,13 @@ class OfflineCaptureService extends ChangeNotifier {
   Future<void> updateSettings(CaptureSettings newSettings) async {
     _settings = newSettings;
     await _saveSettings();
-    
+
     // Restart capturing with new settings if currently active
     if (_isCapturing) {
       await stopCapturing();
       await startCapturing(_currentStationId!);
     }
-    
+
     notifyListeners();
   }
 
@@ -129,23 +131,23 @@ class OfflineCaptureService extends ChangeNotifier {
     if (!_isInitialized) {
       throw StateError('Service not initialized');
     }
-    
+
     if (_isCapturing) {
       await stopCapturing();
     }
 
     _currentStationId = stationId;
     _isCapturing = true;
-    
+
     // Start first capture immediately
     await _startSingleCapture();
-    
+
     // Schedule subsequent captures
     _captureTimer = Timer.periodic(
       Duration(seconds: _settings.intervalSeconds),
       (_) => _startSingleCapture(),
     );
-    
+
     notifyListeners();
   }
 
@@ -155,17 +157,17 @@ class OfflineCaptureService extends ChangeNotifier {
     _isCapturing = false;
     _captureTimer?.cancel();
     _captureTimer = null;
-    
+
     // Stop current recording if active
     if (_recorder.isRecording) {
       await _stopCurrentRecording();
     }
-    
+
     _currentStationId = null;
     _currentCapture = null;
     _currentFilePath = null;
     _currentCaptureStartTime = null;
-    
+
     notifyListeners();
   }
 
@@ -179,7 +181,7 @@ class OfflineCaptureService extends ChangeNotifier {
         debugPrint('⚠️  Station ID became null during capture start, aborting');
         return;
       }
-      
+
       // Stop previous recording if still active
       if (_recorder.isRecording) {
         await _stopCurrentRecording();
@@ -220,8 +222,9 @@ class OfflineCaptureService extends ChangeNotifier {
       _currentCaptureStartTime = timestamp;
 
       // Start recording
-      debugPrint('Starting recording: $filePath (${_settings.durationSeconds}s, ${_settings.quality.sampleRate}Hz, ${_settings.quality.bitRate}bps)');
-      
+      debugPrint(
+          'Starting recording: $filePath (${_settings.durationSeconds}s, ${_settings.quality.sampleRate}Hz, ${_settings.quality.bitRate}bps)');
+
       await _recorder.startRecorder(
         toFile: filePath,
         codec: Codec.aacADTS,
@@ -240,14 +243,14 @@ class OfflineCaptureService extends ChangeNotifier {
       // Schedule stop after duration
       Timer(Duration(seconds: _settings.durationSeconds), () async {
         if (_currentCapture?.id == captureId && _recorder.isRecording) {
-          debugPrint('Timer triggered - stopping recording for capture: $captureId');
+          debugPrint(
+              'Timer triggered - stopping recording for capture: $captureId');
           await _stopCurrentRecording();
         }
       });
 
       _totalCapturesCreated++;
       notifyListeners();
-
     } catch (e) {
       debugPrint('Failed to start capture: $e');
       _totalCapturesFailed++;
@@ -256,17 +259,19 @@ class OfflineCaptureService extends ChangeNotifier {
   }
 
   Future<void> _stopCurrentRecording() async {
-    if (!_recorder.isRecording || _currentCapture == null || _currentFilePath == null) {
+    if (!_recorder.isRecording ||
+        _currentCapture == null ||
+        _currentFilePath == null) {
       return;
     }
 
     try {
       // Stop the recorder and wait for it to complete
       await _recorder.stopRecorder();
-      
+
       // Give the system a moment to flush the file
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       final file = File(_currentFilePath!);
       if (!file.existsSync()) {
         throw Exception('Recorded file does not exist');
@@ -290,15 +295,15 @@ class OfflineCaptureService extends ChangeNotifier {
 
       // Save to database
       await _db.insertCapture(updatedCapture);
-      
+
       // Update statistics
       await _updateStatistics();
-      
-      debugPrint('Capture completed: ${updatedCapture.id} ($finalFileSize bytes)');
-      
+
+      debugPrint(
+          'Capture completed: ${updatedCapture.id} ($finalFileSize bytes)');
     } catch (e) {
       debugPrint('Failed to complete capture: $e');
-      
+
       // Clean up the empty/invalid file
       if (_currentFilePath != null) {
         try {
@@ -311,21 +316,21 @@ class OfflineCaptureService extends ChangeNotifier {
           debugPrint('Failed to delete invalid file: $deleteError');
         }
       }
-      
+
       // Mark as failed if we have a capture record
       if (_currentCapture != null) {
         final failedCapture = _currentCapture!.copyWith(
           status: CaptureStatus.failed,
           errorMessage: e.toString(),
         );
-        
+
         try {
           await _db.insertCapture(failedCapture);
         } catch (dbError) {
           debugPrint('Failed to save failed capture to DB: $dbError');
         }
       }
-      
+
       _totalCapturesFailed++;
     } finally {
       _currentCapture = null;
@@ -378,7 +383,7 @@ class OfflineCaptureService extends ChangeNotifier {
 
     await _db.incrementRetryCount(captureId);
     await _db.updateCaptureStatus(captureId, CaptureStatus.retrying);
-    
+
     notifyListeners();
   }
 
@@ -394,33 +399,34 @@ class OfflineCaptureService extends ChangeNotifier {
           debugPrint('Failed to delete capture file: $e');
         }
       }
-      
+
       // Delete from database
       await _db.deleteCapture(captureId);
       await _updateStatistics();
       notifyListeners();
     }
   }
-  
+
   void updateDetectionResult(Map<String, dynamic> response) {
     _detectionsToday++;
-    
+
     final matched = response['match'] ?? false;
     if (matched) {
       _successfulDetectionsToday++;
       final trackTitle = response['track_title'] ?? 'Unknown';
       final artistName = response['artist_name'] ?? '';
-      _lastMatchedSong = artistName.isNotEmpty ? '$trackTitle - $artistName' : trackTitle;
+      _lastMatchedSong =
+          artistName.isNotEmpty ? '$trackTitle - $artistName' : trackTitle;
       _lastDetectionStatus = 'Match found!';
     } else {
       final reason = response['reason'] ?? 'No match';
       _lastDetectionStatus = reason;
       _lastMatchedSong = null;
     }
-    
+
     notifyListeners();
   }
-  
+
   void resetDailyStats() {
     _detectionsToday = 0;
     _successfulDetectionsToday = 0;
@@ -439,10 +445,9 @@ class OfflineCaptureService extends ChangeNotifier {
 
       // Clean up orphaned files (files without database records)
       await _cleanupOrphanedFiles();
-      
+
       await _updateStatistics();
       notifyListeners();
-      
     } catch (e) {
       debugPrint('Cleanup failed: $e');
     }
@@ -451,7 +456,8 @@ class OfflineCaptureService extends ChangeNotifier {
   Future<void> _cleanupOrphanedFiles() async {
     try {
       final directory = await getTemporaryDirectory();
-      final files = directory.listSync()
+      final files = directory
+          .listSync()
           .whereType<File>()
           .where((f) => f.path.endsWith('.aac'))
           .toList();
@@ -460,7 +466,7 @@ class OfflineCaptureService extends ChangeNotifier {
         // Check if file has corresponding database record
         final captures = await _db.getAllCaptures();
         final hasRecord = captures.any((c) => c.filePath == file.path);
-        
+
         if (!hasRecord) {
           try {
             await file.delete();
@@ -478,12 +484,12 @@ class OfflineCaptureService extends ChangeNotifier {
   Future<void> _updateStatistics() async {
     try {
       final stats = await _db.getCaptureStats(stationId: _currentStationId);
-      final storageUsed = await _db.getTotalStorageUsed(stationId: _currentStationId);
-      
+      final storageUsed =
+          await _db.getTotalStorageUsed(stationId: _currentStationId);
+
       _totalCapturesCompleted = stats[CaptureStatus.completed.name] ?? 0;
       _totalCapturesFailed = stats[CaptureStatus.failed.name] ?? 0;
       _currentStorageUsedMB = (storageUsed / (1024 * 1024)).round();
-      
     } catch (e) {
       debugPrint('Failed to update statistics: $e');
     }

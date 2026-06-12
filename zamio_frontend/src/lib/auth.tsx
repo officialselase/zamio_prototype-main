@@ -109,7 +109,25 @@ export const useAuth = () => {
  */
 export const getArtistId = (): string | null => {
   const stored = getStoredAuth();
-  const artistId = stored.user?.artist_id;
-  return typeof artistId === 'string' ? artistId : null;
+  const user = stored.user as Record<string, unknown> | null | undefined;
+
+  const candidates = [
+    user?.artist_id,
+    user?.artistId,
+    user?.artist_profile && typeof user.artist_profile === 'object'
+      ? (user.artist_profile as Record<string, unknown>).artist_id
+      : null,
+    user?.artist && typeof user.artist === 'object'
+      ? (user.artist as Record<string, unknown>).artist_id
+      : null,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
 };
 

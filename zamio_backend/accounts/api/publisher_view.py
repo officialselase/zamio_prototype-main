@@ -16,6 +16,7 @@ from rest_framework.response import Response
 
 from accounts.api.serializers import UserRegistrationSerializer
 from accounts.api.token_utils import get_jwt_tokens_for_user
+from accounts.link_utils import build_absolute_url
 
 from accounts.models import AuditLog
 from accounts.api.enhanced_auth import SecurityEventHandler
@@ -1191,7 +1192,7 @@ def invite_artist_view(request):
         subject = f"Invitation to join ZamIO from {publisher.company_name}"
         default_msg = (
             f"Hello,\n\n{publisher.company_name} invites you to join ZamIO to manage your royalties and link your catalog.\n"
-            f"Create your artist account here: {settings.BASE_URL}/sign-up?as=artist&email={email}\n\n"
+            f"Create your artist account here: {build_absolute_url(settings.BASE_URL, '/sign-up', {'as': 'artist', 'email': email})}\n\n"
             f"Message: {message or '—'}\n\nRegards,\nZamIO Team"
         )
         send_mail(

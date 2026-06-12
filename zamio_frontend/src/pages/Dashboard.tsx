@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   TrendingUp,
   Music,
@@ -16,11 +16,11 @@ import {
   Target,
   Globe,
   Info,
-  Activity
-} from 'lucide-react';
+  Activity,
+} from "lucide-react";
 
-import HoverCard from '../components/HoverCard';
-import { getArtistId } from '../lib/auth';
+import HoverCard from "../components/HoverCard";
+import { getArtistId } from "../lib/auth";
 import {
   fetchArtistDashboard,
   fetchArtistLogs,
@@ -32,14 +32,14 @@ import {
   type ArtistDashboardPerformanceScore,
   type ArtistMatchLogRecord,
   type ArtistPlayLogRecord,
-} from '../lib/api';
+} from "../lib/api";
 
 const resolveErrorMessage = (error: unknown): string => {
   if (!error) {
-    return 'Unable to load dashboard data.';
+    return "Unable to load dashboard data.";
   }
 
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
 
@@ -47,59 +47,65 @@ const resolveErrorMessage = (error: unknown): string => {
     return error.message;
   }
 
-  if (typeof error === 'object') {
+  if (typeof error === "object") {
     const maybeError = error as {
       response?: { data?: unknown; status?: number };
       message?: string;
     };
 
-    if (maybeError.response?.data && typeof maybeError.response.data === 'object') {
+    if (
+      maybeError.response?.data &&
+      typeof maybeError.response.data === "object"
+    ) {
       const data = maybeError.response.data as Record<string, unknown>;
-      if (typeof data['message'] === 'string') {
-        return data['message'];
+      if (typeof data["message"] === "string") {
+        return data["message"];
       }
-      if (typeof data['detail'] === 'string') {
-        return data['detail'];
+      if (typeof data["detail"] === "string") {
+        return data["detail"];
       }
-      if (data['errors'] && typeof data['errors'] === 'object') {
-        const errors = data['errors'] as Record<string, unknown>;
+      if (data["errors"] && typeof data["errors"] === "object") {
+        const errors = data["errors"] as Record<string, unknown>;
         const firstKey = Object.keys(errors)[0];
         const firstValue = firstKey ? errors[firstKey] : null;
-        if (typeof firstValue === 'string') {
+        if (typeof firstValue === "string") {
           return firstValue;
         }
         if (Array.isArray(firstValue) && firstValue.length > 0) {
           const candidate = firstValue[0];
-          if (typeof candidate === 'string') {
+          if (typeof candidate === "string") {
             return candidate;
           }
         }
       }
     }
 
-    if (typeof maybeError.message === 'string' && maybeError.message.length > 0) {
+    if (
+      typeof maybeError.message === "string" &&
+      maybeError.message.length > 0
+    ) {
       return maybeError.message;
     }
   }
 
-  return 'Unable to load dashboard data. Please try again later.';
+  return "Unable to load dashboard data. Please try again later.";
 };
 
 const Dashboard = () => {
   const artistId = useMemo(() => getArtistId(), []);
 
-  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
-  const [selectedRegion, setSelectedRegion] = useState('all');
+  const [selectedPeriod, setSelectedPeriod] = useState("monthly");
+  const [selectedRegion, setSelectedRegion] = useState("all");
   const [chartFilters, setChartFilters] = useState({
     airplayTrends: {
       showPlays: true,
-      showEarnings: true
+      showEarnings: true,
     },
     regionalPerformance: {
       showPlays: true,
       showEarnings: true,
-      showStations: true
-    }
+      showStations: true,
+    },
   });
   const [tooltip, setTooltip] = useState<{
     show: boolean;
@@ -108,13 +114,18 @@ const Dashboard = () => {
     y: number;
   }>({
     show: false,
-    content: '',
+    content: "",
     x: 0,
-    y: 0
+    y: 0,
   });
-  const [dashboardData, setDashboardData] = useState<ArtistDashboardPayload | null>(null);
-  const [recentPlayLogs, setRecentPlayLogs] = useState<ArtistPlayLogRecord[]>([]);
-  const [recentMatchLogs, setRecentMatchLogs] = useState<ArtistMatchLogRecord[]>([]);
+  const [dashboardData, setDashboardData] =
+    useState<ArtistDashboardPayload | null>(null);
+  const [recentPlayLogs, setRecentPlayLogs] = useState<ArtistPlayLogRecord[]>(
+    [],
+  );
+  const [recentMatchLogs, setRecentMatchLogs] = useState<
+    ArtistMatchLogRecord[]
+  >([]);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
 
@@ -125,7 +136,10 @@ const Dashboard = () => {
       totalEarnings: dashboardData?.stats?.totalEarnings ?? 0,
       growthRate: dashboardData?.stats?.growthRate ?? 0,
       activeTracks: dashboardData?.stats?.activeTracks ?? 0,
-      avgConfidence: dashboardData?.stats?.avgConfidence ?? dashboardData?.confidenceScore ?? 0,
+      avgConfidence:
+        dashboardData?.stats?.avgConfidence ??
+        dashboardData?.confidenceScore ??
+        0,
     }),
     [dashboardData],
   );
@@ -135,7 +149,12 @@ const Dashboard = () => {
     return source.map((song, index) => ({
       ...song,
       trend:
-        song.trend ?? (index === 0 ? 'up' : index === source.length - 1 && source.length > 1 ? 'down' : 'stable'),
+        song.trend ??
+        (index === 0
+          ? "up"
+          : index === source.length - 1 && source.length > 1
+            ? "down"
+            : "stable"),
     }));
   }, [dashboardData]);
 
@@ -146,9 +165,9 @@ const Dashboard = () => {
         let label = entry.date;
         if (parsed && !Number.isNaN(parsed.valueOf())) {
           label = parsed.toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
+            month: "short",
+            day: "numeric",
+            year: "numeric",
           });
         }
 
@@ -165,7 +184,7 @@ const Dashboard = () => {
     () =>
       (dashboardData?.stationBreakdown ?? []).map((station) => ({
         ...station,
-        type: station.type ?? 'Unknown',
+        type: station.type ?? "Unknown",
       })),
     [dashboardData],
   );
@@ -174,7 +193,9 @@ const Dashboard = () => {
     () =>
       (dashboardData?.ghanaRegions ?? []).map((region) => ({
         ...region,
-        trend: region.trend ?? (region.growth > 1 ? 'up' : region.growth < -1 ? 'down' : 'stable'),
+        trend:
+          region.trend ??
+          (region.growth > 1 ? "up" : region.growth < -1 ? "down" : "stable"),
       })),
     [dashboardData],
   );
@@ -193,10 +214,18 @@ const Dashboard = () => {
   const targets = useMemo(() => {
     const backendTargets = dashboardData?.targets;
 
-    const fallbackAirplay = statsData.totalPlays ? Math.ceil(statsData.totalPlays * 1.15) : 10;
-    const fallbackEarnings = statsData.totalEarnings ? Math.round(statsData.totalEarnings * 1.2 + 50) : 100;
-    const fallbackStations = statsData.totalStations ? Math.ceil(statsData.totalStations * 1.1) : 3;
-    const fallbackConfidence = statsData.avgConfidence ? Math.min(100, Math.round((statsData.avgConfidence + 5) * 10) / 10) : 70;
+    const fallbackAirplay = statsData.totalPlays
+      ? Math.ceil(statsData.totalPlays * 1.15)
+      : 10;
+    const fallbackEarnings = statsData.totalEarnings
+      ? Math.round(statsData.totalEarnings * 1.2 + 50)
+      : 100;
+    const fallbackStations = statsData.totalStations
+      ? Math.ceil(statsData.totalStations * 1.1)
+      : 3;
+    const fallbackConfidence = statsData.avgConfidence
+      ? Math.min(100, Math.round((statsData.avgConfidence + 5) * 10) / 10)
+      : 70;
 
     return {
       airplayTarget: backendTargets?.airplayTarget ?? fallbackAirplay,
@@ -204,7 +233,13 @@ const Dashboard = () => {
       stationsTarget: backendTargets?.stationsTarget ?? fallbackStations,
       confidenceTarget: backendTargets?.confidenceTarget ?? fallbackConfidence,
     };
-  }, [dashboardData?.targets, statsData.avgConfidence, statsData.totalEarnings, statsData.totalPlays, statsData.totalStations]);
+  }, [
+    dashboardData?.targets,
+    statsData.avgConfidence,
+    statsData.totalEarnings,
+    statsData.totalPlays,
+    statsData.totalStations,
+  ]);
 
   const maxPlays = useMemo(() => {
     if (!playsOverTime.length) {
@@ -232,71 +267,74 @@ const Dashboard = () => {
 
   const growthIsPositive = statsData.growthRate >= 0;
   const growthTextClass = growthIsPositive
-    ? 'text-green-600 dark:text-green-400'
-    : 'text-red-600 dark:text-red-400';
-  const formattedGrowthRate = `${growthIsPositive ? '+' : '-'}${Math.abs(statsData.growthRate).toFixed(1)}%`;
+    ? "text-green-600 dark:text-green-400"
+    : "text-red-600 dark:text-red-400";
+  const formattedGrowthRate = `${growthIsPositive ? "+" : "-"}${Math.abs(statsData.growthRate).toFixed(1)}%`;
 
   const statusColors = {
     excellent: {
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      border: 'border-emerald-200 dark:border-emerald-800',
-      text: 'text-emerald-700 dark:text-emerald-300',
-      accent: 'text-emerald-600 dark:text-emerald-400'
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
+      border: "border-emerald-200 dark:border-emerald-800",
+      text: "text-emerald-700 dark:text-emerald-300",
+      accent: "text-emerald-600 dark:text-emerald-400",
     },
     good: {
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-      border: 'border-blue-200 dark:border-blue-800',
-      text: 'text-blue-700 dark:text-blue-300',
-      accent: 'text-blue-600 dark:text-blue-400'
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      border: "border-blue-200 dark:border-blue-800",
+      text: "text-blue-700 dark:text-blue-300",
+      accent: "text-blue-600 dark:text-blue-400",
     },
     average: {
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      border: 'border-amber-200 dark:border-amber-800',
-      text: 'text-amber-700 dark:text-amber-300',
-      accent: 'text-amber-600 dark:text-amber-400'
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      border: "border-amber-200 dark:border-amber-800",
+      text: "text-amber-700 dark:text-amber-300",
+      accent: "text-amber-600 dark:text-amber-400",
     },
     poor: {
-      bg: 'bg-red-50 dark:bg-red-900/20',
-      border: 'border-red-200 dark:border-red-800',
-      text: 'text-red-700 dark:text-red-300',
-      accent: 'text-red-600 dark:text-red-400'
-    }
+      bg: "bg-red-50 dark:bg-red-900/20",
+      border: "border-red-200 dark:border-red-800",
+      text: "text-red-700 dark:text-red-300",
+      accent: "text-red-600 dark:text-red-400",
+    },
   };
 
   const warmDarkColors = {
     background: {
-      primary: '#0f0f0f',
-      secondary: '#1a1a1a',
-      tertiary: '#262626',
-      elevated: '#2d2d2d',
+      primary: "#0f0f0f",
+      secondary: "#1a1a1a",
+      tertiary: "#262626",
+      elevated: "#2d2d2d",
     },
     surface: {
-      50: '#fafafa',
-      100: '#f5f5f5',
-      200: '#e5e5e5',
-      300: '#d4d4d4',
-      400: '#a3a3a3',
-      500: '#737373',
-      600: '#525252',
-      700: '#404040',
-      800: '#262626',
-      900: '#171717',
-      950: '#0a0a0a',
+      50: "#fafafa",
+      100: "#f5f5f5",
+      200: "#e5e5e5",
+      300: "#d4d4d4",
+      400: "#a3a3a3",
+      500: "#737373",
+      600: "#525252",
+      700: "#404040",
+      800: "#262626",
+      900: "#171717",
+      950: "#0a0a0a",
     },
     text: {
-      primary: '#f5f5f5',
-      secondary: '#d4d4d4',
-      tertiary: '#a3a3a3',
-      muted: '#737373',
+      primary: "#f5f5f5",
+      secondary: "#d4d4d4",
+      tertiary: "#a3a3a3",
+      muted: "#737373",
     },
     border: {
-      light: '#404040',
-      medium: '#525252',
-      dark: '#737373',
-    }
+      light: "#404040",
+      medium: "#525252",
+      dark: "#737373",
+    },
   };
 
-  const getStatusColor = (value: number, thresholds = { excellent: 90, good: 80, average: 70 }) => {
+  const getStatusColor = (
+    value: number,
+    thresholds = { excellent: 90, good: 80, average: 70 },
+  ) => {
     if (value >= thresholds.excellent) return statusColors.excellent;
     if (value >= thresholds.good) return statusColors.good;
     if (value >= thresholds.average) return statusColors.average;
@@ -306,15 +344,18 @@ const Dashboard = () => {
   const [viewTransition, setViewTransition] = useState(false);
 
   const viewTransitionStyles = viewTransition
-    ? 'opacity-0 scale-95 translate-y-2'
-    : 'opacity-100 scale-100 translate-y-0';
+    ? "opacity-0 scale-95 translate-y-2"
+    : "opacity-100 scale-100 translate-y-0";
 
   const hideTooltip = () => {
-    setTooltip(prev => ({ ...prev, show: false }));
+    setTooltip((prev) => ({ ...prev, show: false }));
   };
 
-  const toggleChartFilter = (chartType: keyof typeof chartFilters, filterKey: string) => {
-    setChartFilters(prev => {
+  const toggleChartFilter = (
+    chartType: keyof typeof chartFilters,
+    filterKey: string,
+  ) => {
+    setChartFilters((prev) => {
       const current = prev[chartType] as Record<string, boolean> | undefined;
       const nextValue = !(current?.[filterKey] ?? false);
       return {
@@ -329,12 +370,12 @@ const Dashboard = () => {
 
   const getRegionColors = (index: number) => {
     const colors = [
-      'from-blue-500 to-purple-500',
-      'from-green-500 to-blue-500',
-      'from-yellow-500 to-green-500',
-      'from-orange-500 to-yellow-500',
-      'from-red-500 to-orange-500',
-      'from-purple-500 to-pink-500',
+      "from-blue-500 to-purple-500",
+      "from-green-500 to-blue-500",
+      "from-yellow-500 to-green-500",
+      "from-orange-500 to-yellow-500",
+      "from-red-500 to-orange-500",
+      "from-purple-500 to-pink-500",
     ];
     return colors[index % colors.length];
   };
@@ -357,10 +398,10 @@ const Dashboard = () => {
           matchPage: 1,
           playPageSize: 5,
           matchPageSize: 5,
-          playSortBy: 'matched_at',
-          playSortOrder: 'desc',
-          matchSortBy: 'matched_at',
-          matchSortOrder: 'desc',
+          playSortBy: "matched_at",
+          playSortOrder: "desc",
+          matchSortBy: "matched_at",
+          matchSortOrder: "desc",
         }),
       ]);
 
@@ -377,11 +418,13 @@ const Dashboard = () => {
 
       if (payload?.ghanaRegions) {
         setSelectedRegion((prevRegion) => {
-          if (prevRegion === 'all') {
+          if (prevRegion === "all") {
             return prevRegion;
           }
-          const hasRegion = payload.ghanaRegions?.some((region) => region.region === prevRegion);
-          return hasRegion ? prevRegion : 'all';
+          const hasRegion = payload.ghanaRegions?.some(
+            (region) => region.region === prevRegion,
+          );
+          return hasRegion ? prevRegion : "all";
         });
       }
     } catch (error) {
@@ -418,9 +461,9 @@ const Dashboard = () => {
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'up':
+      case "up":
         return <ChevronUp className="w-4 h-4 text-green-500" />;
-      case 'down':
+      case "down":
         return <ChevronDown className="w-4 h-4 text-red-500" />;
       default:
         return <div className="w-4 h-4 rounded-full bg-blue-500"></div>;
@@ -434,9 +477,12 @@ const Dashboard = () => {
           <div className="rounded-full bg-indigo-100 p-3 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
             <Info className="h-6 w-6" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">We couldn't find your artist profile</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            We couldn't find your artist profile
+          </h2>
           <p className="max-w-md text-sm text-gray-600 dark:text-gray-300">
-            Please sign out and sign in again to refresh your account data, then return to the dashboard.
+            Please sign out and sign in again to refresh your account data, then
+            return to the dashboard.
           </p>
         </div>
       </div>
@@ -448,7 +494,9 @@ const Dashboard = () => {
       <div className="flex min-h-[480px] flex-col items-center justify-center">
         <div className="flex flex-col items-center space-y-4 text-center">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
-          <p className="text-sm font-medium text-indigo-600 dark:text-indigo-300">Loading your dashboard metrics…</p>
+          <p className="text-sm font-medium text-indigo-600 dark:text-indigo-300">
+            Loading your dashboard metrics…
+          </p>
         </div>
       </div>
     );
@@ -463,7 +511,7 @@ const Dashboard = () => {
           style={{
             left: tooltip.x,
             top: tooltip.y,
-            transform: 'translate(-50%, -100%)'
+            transform: "translate(-50%, -100%)",
           }}
         >
           {tooltip.content}
@@ -476,7 +524,9 @@ const Dashboard = () => {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+                Dashboard
+              </h1>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-light leading-relaxed">
                 Welcome back! Here's your music performance overview.
               </p>
@@ -511,14 +561,18 @@ const Dashboard = () => {
           </div>
         )}
         {/* Stats Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 ${viewTransitionStyles}`}>
-            <div className="bg-gradient-to-br from-red-50/90 via-orange-50/80 to-pink-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-red-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-red-300 dark:hover:border-red-700/70 group cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-normal text-gray-700 dark:text-slate-300 leading-relaxed">Total Airplay</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 leading-tight group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-300">
-                    {statsData.totalPlays.toLocaleString()}
-                  </p>
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 ${viewTransitionStyles}`}
+        >
+          <div className="bg-gradient-to-br from-red-50/90 via-orange-50/80 to-pink-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-red-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-red-300 dark:hover:border-red-700/70 group cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-normal text-gray-700 dark:text-slate-300 leading-relaxed">
+                  Total Airplay
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 leading-tight group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-300">
+                  {statsData.totalPlays.toLocaleString()}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/60 dark:to-orange-900/60 rounded-lg flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
                 <Radio className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -529,14 +583,18 @@ const Dashboard = () => {
                 <TrendingUp className="w-4 h-4 text-green-500" />
               </div>
               <span className={growthTextClass}>{formattedGrowthRate}</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-2">from last month</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-2">
+                from last month
+              </span>
             </div>
           </div>
 
           <div className="bg-gradient-to-br from-emerald-50/90 via-green-50/80 to-teal-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-emerald-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-emerald-300 dark:hover:border-emerald-700/70 group cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm font-normal text-gray-700 dark:text-slate-300 leading-relaxed">Total Earnings</p>
+                <p className="text-xs sm:text-sm font-normal text-gray-700 dark:text-slate-300 leading-relaxed">
+                  Total Earnings
+                </p>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300">
                   ₵{statsData.totalEarnings.toLocaleString()}
                 </p>
@@ -546,14 +604,18 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Lifetime royalties earned</span>
+              <span className="text-gray-500 dark:text-gray-400">
+                Lifetime royalties earned
+              </span>
             </div>
           </div>
 
           <div className="bg-gradient-to-br from-amber-50/90 via-orange-50/80 to-yellow-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-amber-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700/70 group cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm font-normal text-gray-700 dark:text-slate-300 leading-relaxed">Active Stations</p>
+                <p className="text-xs sm:text-sm font-normal text-gray-700 dark:text-slate-300 leading-relaxed">
+                  Active Stations
+                </p>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 leading-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors duration-300">
                   {statsData.totalStations}
                 </p>
@@ -563,17 +625,23 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Broadcasting your music</span>
+              <span className="text-gray-500 dark:text-gray-400">
+                Broadcasting your music
+              </span>
             </div>
           </div>
         </div>
 
         {/* Main Content Grid */}
-        <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${viewTransitionStyles}`}>
+        <div
+          className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${viewTransitionStyles}`}
+        >
           {/* Left Column - Charts and Data */}
           <div className={`lg:col-span-2 space-y-6 ${viewTransitionStyles}`}>
             {/* Plays Over Time Chart */}
-            <div className={`bg-gradient-to-br from-blue-50/90 via-cyan-50/80 to-indigo-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-blue-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ${viewTransitionStyles}`}>
+            <div
+              className={`bg-gradient-to-br from-blue-50/90 via-cyan-50/80 to-indigo-50/90 dark:from-slate-900/95 dark:via-slate-800/90 dark:to-slate-900/95 backdrop-blur-sm rounded-xl shadow-lg border border-blue-200/50 dark:border-slate-600/60 p-6 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ${viewTransitionStyles}`}
+            >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-slate-100 flex items-center">
                   <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
@@ -583,23 +651,31 @@ const Dashboard = () => {
                   <button
                     className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all duration-300 ${
                       chartFilters.airplayTrends.showPlays
-                        ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                        : 'text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-slate-700 dark:hover:to-slate-600 border border-transparent hover:border-gray-200 dark:hover:border-slate-600'
+                        ? "bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                        : "text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-slate-700 dark:hover:to-slate-600 border border-transparent hover:border-gray-200 dark:hover:border-slate-600"
                     }`}
-                    onClick={() => toggleChartFilter('airplayTrends', 'showPlays')}
+                    onClick={() =>
+                      toggleChartFilter("airplayTrends", "showPlays")
+                    }
                   >
-                    <div className={`w-3 h-3 rounded-full ${chartFilters.airplayTrends.showPlays ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                    <div
+                      className={`w-3 h-3 rounded-full ${chartFilters.airplayTrends.showPlays ? "bg-gradient-to-r from-blue-500 to-cyan-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                    ></div>
                     <span className="text-sm font-medium">Plays</span>
                   </button>
                   <button
                     className={`flex items-center space-x-2 px-2 py-1 rounded-md transition-all duration-300 ${
                       chartFilters.airplayTrends.showEarnings
-                        ? 'bg-gradient-to-r from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                        : 'text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-slate-700 dark:hover:to-slate-600 border border-transparent hover:border-gray-200 dark:hover:border-slate-600'
+                        ? "bg-gradient-to-r from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                        : "text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-slate-700 dark:hover:to-slate-600 border border-transparent hover:border-gray-200 dark:hover:border-slate-600"
                     }`}
-                    onClick={() => toggleChartFilter('airplayTrends', 'showEarnings')}
+                    onClick={() =>
+                      toggleChartFilter("airplayTrends", "showEarnings")
+                    }
                   >
-                    <div className={`w-3 h-3 rounded-full ${chartFilters.airplayTrends.showEarnings ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                    <div
+                      className={`w-3 h-3 rounded-full ${chartFilters.airplayTrends.showEarnings ? "bg-gradient-to-r from-emerald-500 to-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                    ></div>
                     <span className="text-sm font-medium">Earnings</span>
                   </button>
                 </div>
@@ -615,8 +691,15 @@ const Dashboard = () => {
                         <div className="flex-1 bg-gray-200 dark:bg-slate-700 rounded-full h-2 relative group">
                           <div
                             className="bg-blue-500 h-2 rounded-full transition-all duration-300 cursor-pointer"
-                            style={{ width: `${maxPlays ? (month.airplay / maxPlays) * 100 : 0}%` }}
-                            onMouseEnter={(e) => showTooltip(`${month.airplay.toLocaleString()} plays`, e)}
+                            style={{
+                              width: `${maxPlays ? (month.airplay / maxPlays) * 100 : 0}%`,
+                            }}
+                            onMouseEnter={(e) =>
+                              showTooltip(
+                                `${month.airplay.toLocaleString()} plays`,
+                                e,
+                              )
+                            }
                             onMouseLeave={hideTooltip}
                           />
                         </div>
@@ -627,7 +710,9 @@ const Dashboard = () => {
                     </div>
                     <div
                       className="w-20 text-sm text-green-600 dark:text-green-400 text-right cursor-pointer"
-                      onMouseEnter={(e) => showTooltip(`₵${month.earnings.toFixed(0)} earned`, e)}
+                      onMouseEnter={(e) =>
+                        showTooltip(`₵${month.earnings.toFixed(0)} earned`, e)
+                      }
                       onMouseLeave={hideTooltip}
                     >
                       ₵{month.earnings.toFixed(0)}
@@ -650,7 +735,10 @@ const Dashboard = () => {
               </div>
               <div className="space-y-4">
                 {topSongs.map((song, index) => (
-                  <div key={`${song.title}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 sm:p-4 bg-gray-50 dark:bg-slate-700 rounded-lg space-y-2 sm:space-y-0 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 dark:hover:from-slate-600/50 dark:hover:to-slate-700/50 hover:scale-[1.02] hover:shadow-md transition-all duration-300 cursor-pointer group min-h-[60px]">
+                  <div
+                    key={`${song.title}-${index}`}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-6 sm:p-4 bg-gray-50 dark:bg-slate-700 rounded-lg space-y-2 sm:space-y-0 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 dark:hover:from-slate-600/50 dark:hover:to-slate-700/50 hover:scale-[1.02] hover:shadow-md transition-all duration-300 cursor-pointer group min-h-[60px]"
+                  >
                     <div className="flex items-center space-x-4">
                       <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold group-hover:scale-110 transition-transform duration-300">
                         {index + 1}
@@ -668,34 +756,59 @@ const Dashboard = () => {
                       <div className="text-right">
                         <HoverCard
                           trigger={
-                            <p
-                              className="font-semibold text-gray-900 dark:text-white cursor-pointer text-sm sm:text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300"
-                            >
+                            <p className="font-semibold text-gray-900 dark:text-white cursor-pointer text-sm sm:text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300">
                               {song.plays.toLocaleString()}
                             </p>
                           }
                           content={[
-                            { label: 'Total Plays', value: song.plays.toLocaleString() },
-                            { label: 'Stations', value: `${song.stations}` },
-                            { label: 'Trend', value: song.trend === 'up' ? 'Increasing' : song.trend === 'down' ? 'Decreasing' : 'Stable' }
+                            {
+                              label: "Total Plays",
+                              value: song.plays.toLocaleString(),
+                            },
+                            { label: "Stations", value: `${song.stations}` },
+                            {
+                              label: "Trend",
+                              value:
+                                song.trend === "up"
+                                  ? "Increasing"
+                                  : song.trend === "down"
+                                    ? "Decreasing"
+                                    : "Stable",
+                            },
                           ]}
                           position="top"
                         />
-                        <p className="text-xs text-gray-500 dark:text-gray-400">plays</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          plays
+                        </p>
                       </div>
                       <div className="text-right">
                         <p
                           className="font-semibold text-green-600 dark:text-green-400 cursor-pointer text-sm sm:text-base group-hover:text-emerald-500 dark:group-hover:text-emerald-300 transition-colors duration-300"
-                          onMouseEnter={(e) => showTooltip(`₵${song.earnings.toFixed(2)} earned from ${song.plays.toLocaleString()} plays`, e)}
+                          onMouseEnter={(e) =>
+                            showTooltip(
+                              `₵${song.earnings.toFixed(2)} earned from ${song.plays.toLocaleString()} plays`,
+                              e,
+                            )
+                          }
                           onMouseLeave={hideTooltip}
                         >
                           ₵{song.earnings.toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">earned</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          earned
+                        </p>
                       </div>
-                      <div className="flex items-center cursor-pointer group-hover:scale-110 transition-transform duration-300"
-                           onMouseEnter={(e) => showTooltip(`Trend: ${song.trend === 'up' ? 'Increasing' : song.trend === 'down' ? 'Decreasing' : 'Stable'} performance`, e)}
-                           onMouseLeave={hideTooltip}>
+                      <div
+                        className="flex items-center cursor-pointer group-hover:scale-110 transition-transform duration-300"
+                        onMouseEnter={(e) =>
+                          showTooltip(
+                            `Trend: ${song.trend === "up" ? "Increasing" : song.trend === "down" ? "Decreasing" : "Stable"} performance`,
+                            e,
+                          )
+                        }
+                        onMouseLeave={hideTooltip}
+                      >
                         {getTrendIcon(song.trend)}
                       </div>
                     </div>
@@ -728,74 +841,119 @@ const Dashboard = () => {
                 {ghanaRegions.map((region, index) => {
                   const regionalShare = computeRegionalShare(region.plays);
                   return (
-                    <div key={region.region} className="p-4 sm:p-3 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-teal-50/50 dark:hover:from-slate-600/50 dark:hover:to-slate-700/50 hover:scale-[1.02] hover:shadow-md transition-all duration-300 cursor-pointer group min-h-[60px]">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
-                      <h3 className="font-medium text-gray-900 dark:text-white text-sm sm:text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300">
-                        {region.region}
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-xs sm:text-sm font-medium ${
-                          region.trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' :
-                          region.trend === 'down' ? 'text-red-600 dark:text-red-400' :
-                          'text-blue-600 dark:text-blue-400'
-                        }`}>
-                          {region.trend === 'up' ? '+' : region.trend === 'down' ? '-' : ''}
-                          {region.growth}%
-                        </span>
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          region.trend === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' :
-                          region.trend === 'down' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300' :
-                          'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
-                        }`}>
-                          {region.trend === 'up' ? 'Growing' : region.trend === 'down' ? 'Declining' : 'Stable'}
+                    <div
+                      key={region.region}
+                      className="p-4 sm:p-3 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-teal-50/50 dark:hover:from-slate-600/50 dark:hover:to-slate-700/50 hover:scale-[1.02] hover:shadow-md transition-all duration-300 cursor-pointer group min-h-[60px]"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
+                        <h3 className="font-medium text-gray-900 dark:text-white text-sm sm:text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300">
+                          {region.region}
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`text-xs sm:text-sm font-medium ${
+                              region.trend === "up"
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : region.trend === "down"
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-blue-600 dark:text-blue-400"
+                            }`}
+                          >
+                            {region.trend === "up"
+                              ? "+"
+                              : region.trend === "down"
+                                ? "-"
+                                : ""}
+                            {region.growth}%
+                          </span>
+                          <div
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              region.trend === "up"
+                                ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
+                                : region.trend === "down"
+                                  ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+                                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+                            }`}
+                          >
+                            {region.trend === "up"
+                              ? "Growing"
+                              : region.trend === "down"
+                                ? "Declining"
+                                : "Stable"}
+                          </div>
+                          <div className="group-hover:scale-110 transition-transform duration-300">
+                            {getTrendIcon(region.trend)}
+                          </div>
                         </div>
-                        <div className="group-hover:scale-110 transition-transform duration-300">
-                          {getTrendIcon(region.trend)}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs sm:text-sm">
+                          <span className="text-gray-700 dark:text-gray-300 font-light leading-relaxed">
+                            Plays
+                          </span>
+                          <span
+                            className="font-medium text-gray-900 dark:text-white cursor-pointer"
+                            onMouseEnter={(e) =>
+                              showTooltip(
+                                `${region.plays.toLocaleString()} total plays in ${region.region}`,
+                                e,
+                              )
+                            }
+                            onMouseLeave={hideTooltip}
+                          >
+                            {region.plays.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs sm:text-sm">
+                          <span className="text-gray-700 dark:text-gray-300 font-light leading-relaxed">
+                            Earnings
+                          </span>
+                          <span
+                            className="font-medium text-green-600 dark:text-green-400 cursor-pointer"
+                            onMouseEnter={(e) =>
+                              showTooltip(
+                                `₵${region.earnings.toFixed(2)} earned from ${region.plays.toLocaleString()} plays`,
+                                e,
+                              )
+                            }
+                            onMouseLeave={hideTooltip}
+                          >
+                            ₵{region.earnings.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs sm:text-sm">
+                          <span className="text-gray-700 dark:text-gray-300 font-light leading-relaxed">
+                            Stations
+                          </span>
+                          <span
+                            className="font-medium text-orange-600 dark:text-orange-400 cursor-pointer"
+                            onMouseEnter={(e) =>
+                              showTooltip(
+                                `${region.stations} active stations in ${region.region}`,
+                                e,
+                              )
+                            }
+                            onMouseLeave={hideTooltip}
+                          >
+                            {region.stations}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs sm:text-sm">
-                        <span className="text-gray-700 dark:text-gray-300 font-light leading-relaxed">Plays</span>
-                        <span
-                          className="font-medium text-gray-900 dark:text-white cursor-pointer"
-                          onMouseEnter={(e) => showTooltip(`${region.plays.toLocaleString()} total plays in ${region.region}`, e)}
+                      <div className="mt-3 w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2 relative group">
+                        <div
+                          className={`h-full bg-gradient-to-r ${getRegionColors(index)} rounded-full cursor-pointer transition-all duration-300`}
+                          style={{ width: `${regionalShare}%` }}
+                          onMouseEnter={(e) =>
+                            showTooltip(
+                              `${regionalShare}% of total regional plays`,
+                              e,
+                            )
+                          }
                           onMouseLeave={hideTooltip}
-                        >
-                          {region.plays.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs sm:text-sm">
-                        <span className="text-gray-700 dark:text-gray-300 font-light leading-relaxed">Earnings</span>
-                        <span
-                          className="font-medium text-green-600 dark:text-green-400 cursor-pointer"
-                          onMouseEnter={(e) => showTooltip(`₵${region.earnings.toFixed(2)} earned from ${region.plays.toLocaleString()} plays`, e)}
-                          onMouseLeave={hideTooltip}
-                        >
-                          ₵{region.earnings.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs sm:text-sm">
-                        <span className="text-gray-700 dark:text-gray-300 font-light leading-relaxed">Stations</span>
-                        <span
-                          className="font-medium text-orange-600 dark:text-orange-400 cursor-pointer"
-                          onMouseEnter={(e) => showTooltip(`${region.stations} active stations in ${region.region}`, e)}
-                          onMouseLeave={hideTooltip}
-                        >
-                          {region.stations}
-                        </span>
+                        />
                       </div>
                     </div>
-                    <div className="mt-3 w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2 relative group">
-                      <div
-                        className={`h-full bg-gradient-to-r ${getRegionColors(index)} rounded-full cursor-pointer transition-all duration-300`}
-                        style={{ width: `${regionalShare}%` }}
-                        onMouseEnter={(e) => showTooltip(`${regionalShare}% of total regional plays`, e)}
-                        onMouseLeave={hideTooltip}
-                      />
-                    </div>
-                  </div>
-                );
+                  );
                 })}
               </div>
             </div>
@@ -814,14 +972,23 @@ const Dashboard = () => {
 
               <div className="space-y-6">
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Latest PlayLogs</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Latest PlayLogs
+                  </p>
                   <div className="space-y-3">
                     {recentPlayLogs.slice(0, 3).map((log) => (
-                      <div key={log.id} className="rounded-lg border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 p-3">
+                      <div
+                        key={log.id}
+                        className="rounded-lg border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 p-3"
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{log.track_title}</p>
-                            <p className="truncate text-xs text-gray-600 dark:text-gray-400">{log.station_name}</p>
+                            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                              {log.track_title}
+                            </p>
+                            <p className="truncate text-xs text-gray-600 dark:text-gray-400">
+                              {log.station_name}
+                            </p>
                           </div>
                           <span className="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                             ₵{Number(log.royalty_amount ?? 0).toFixed(2)}
@@ -830,29 +997,42 @@ const Dashboard = () => {
                       </div>
                     ))}
                     {!recentPlayLogs.length && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">No playlogs yet.</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        No playlogs yet.
+                      </p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Latest MatchLogs</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Latest MatchLogs
+                  </p>
                   <div className="space-y-3">
                     {recentMatchLogs.slice(0, 3).map((log) => (
-                      <div key={log.id} className="rounded-lg border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 p-3">
+                      <div
+                        key={log.id}
+                        className="rounded-lg border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 p-3"
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{log.song}</p>
-                            <p className="truncate text-xs text-gray-600 dark:text-gray-400">{log.station}</p>
+                            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                              {log.song}
+                            </p>
+                            <p className="truncate text-xs text-gray-600 dark:text-gray-400">
+                              {log.station}
+                            </p>
                           </div>
                           <span className="flex-shrink-0 rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
-                            {log.status ?? 'Pending'}
+                            {log.status ?? "Pending"}
                           </span>
                         </div>
                       </div>
                     ))}
                     {!recentMatchLogs.length && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">No matchlogs yet.</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        No matchlogs yet.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -869,7 +1049,10 @@ const Dashboard = () => {
               </div>
               <div className="space-y-4">
                 {stationBreakdown.map((station, index) => (
-                  <div key={station.station} className="flex items-center space-x-3 hover:bg-gradient-to-r hover:from-amber-50/50 hover:to-orange-50/50 dark:hover:from-slate-600/50 dark:hover:to-slate-700/50 hover:scale-[1.02] hover:shadow-sm transition-all duration-300 cursor-pointer group p-3 sm:p-2 rounded-lg min-h-[50px]">
+                  <div
+                    key={station.station}
+                    className="flex items-center space-x-3 hover:bg-gradient-to-r hover:from-amber-50/50 hover:to-orange-50/50 dark:hover:from-slate-600/50 dark:hover:to-slate-700/50 hover:scale-[1.02] hover:shadow-sm transition-all duration-300 cursor-pointer group p-3 sm:p-2 rounded-lg min-h-[50px]"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors duration-300">

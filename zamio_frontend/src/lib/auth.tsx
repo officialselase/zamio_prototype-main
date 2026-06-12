@@ -6,9 +6,9 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from 'react';
-import { getStoredAuth, logout as clearStoredAuth } from './api';
-import type { StoredUserPayload } from '@zamio/ui';
+} from "react";
+import { getStoredAuth, logout as clearStoredAuth } from "./api";
+import type { StoredUserPayload } from "@zamio/ui";
 
 interface AuthSnapshot {
   accessToken: string | null;
@@ -44,20 +44,23 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<AuthState>(initialState);
 
-  const applySnapshot = useCallback((snapshot: Partial<AuthSnapshot> | null | undefined) => {
-    const stored = getStoredAuth();
-    const nextSnapshot: AuthSnapshot = {
-      accessToken: snapshot?.accessToken ?? stored.accessToken ?? null,
-      refreshToken: snapshot?.refreshToken ?? stored.refreshToken ?? null,
-      user: snapshot?.user ?? stored.user ?? null,
-    };
+  const applySnapshot = useCallback(
+    (snapshot: Partial<AuthSnapshot> | null | undefined) => {
+      const stored = getStoredAuth();
+      const nextSnapshot: AuthSnapshot = {
+        accessToken: snapshot?.accessToken ?? stored.accessToken ?? null,
+        refreshToken: snapshot?.refreshToken ?? stored.refreshToken ?? null,
+        user: snapshot?.user ?? stored.user ?? null,
+      };
 
-    setState({
-      ...nextSnapshot,
-      isInitialized: true,
-      isAuthenticated: Boolean(nextSnapshot.accessToken),
-    });
-  }, []);
+      setState({
+        ...nextSnapshot,
+        isInitialized: true,
+        isAuthenticated: Boolean(nextSnapshot.accessToken),
+      });
+    },
+    [],
+  );
 
   const refreshFromStorage = useCallback(() => {
     applySnapshot(defaultSnapshot);
@@ -99,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -114,20 +117,19 @@ export const getArtistId = (): string | null => {
   const candidates = [
     user?.artist_id,
     user?.artistId,
-    user?.artist_profile && typeof user.artist_profile === 'object'
+    user?.artist_profile && typeof user.artist_profile === "object"
       ? (user.artist_profile as Record<string, unknown>).artist_id
       : null,
-    user?.artist && typeof user.artist === 'object'
+    user?.artist && typeof user.artist === "object"
       ? (user.artist as Record<string, unknown>).artist_id
       : null,
   ];
 
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
       return candidate.trim();
     }
   }
 
   return null;
 };
-

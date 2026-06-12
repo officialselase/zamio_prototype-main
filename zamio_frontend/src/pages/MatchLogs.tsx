@@ -1,18 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, Eye, Clock, Radio, Music, TrendingUp } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, Eye, Clock, Radio, Music, TrendingUp } from "lucide-react";
 
-import { getArtistId, useAuth } from '../lib/auth';
+import { getArtistId, useAuth } from "../lib/auth";
 import {
   ArtistLogPagination,
   ArtistLogsPayload,
   ArtistMatchLogRecord,
   ArtistPlayLogRecord,
   fetchArtistLogs,
-} from '../lib/api';
+} from "../lib/api";
 
 const ITEMS_PER_PAGE = 10;
 
-const buildEmptyPagination = (pageSize = ITEMS_PER_PAGE): ArtistLogPagination => ({
+const buildEmptyPagination = (
+  pageSize = ITEMS_PER_PAGE,
+): ArtistLogPagination => ({
   count: 0,
   page_number: 1,
   page_size: pageSize,
@@ -24,9 +26,9 @@ const buildEmptyPagination = (pageSize = ITEMS_PER_PAGE): ArtistLogPagination =>
 });
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'GHS',
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "GHS",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value ?? 0);
@@ -36,7 +38,7 @@ const parseDate = (value: string | null) => {
     return null;
   }
 
-  const normalized = value.replace(' ~ ', 'T');
+  const normalized = value.replace(" ~ ", "T");
   const parsed = new Date(normalized);
 
   if (Number.isNaN(parsed.getTime())) {
@@ -49,38 +51,38 @@ const parseDate = (value: string | null) => {
 const formatDateTime = (value: string | null) => {
   const parsed = parseDate(value);
   if (!parsed) {
-    return value ? value.replace(' ~ ', ' ') : '—';
+    return value ? value.replace(" ~ ", " ") : "—";
   }
   return parsed.toLocaleString();
 };
 
 const resolveLogsError = (maybeError: unknown) => {
   if (!maybeError) {
-    return 'Unable to load logs. Please try again later.';
+    return "Unable to load logs. Please try again later.";
   }
 
-  if (typeof maybeError === 'object' && maybeError !== null) {
+  if (typeof maybeError === "object" && maybeError !== null) {
     const response = (maybeError as { response?: unknown }).response;
-    if (response && typeof response === 'object') {
+    if (response && typeof response === "object") {
       const data = (response as { data?: unknown }).data;
-      if (data && typeof data === 'object') {
+      if (data && typeof data === "object") {
         const message = (data as { message?: unknown }).message;
-        if (typeof message === 'string' && message.trim().length > 0) {
+        if (typeof message === "string" && message.trim().length > 0) {
           return message;
         }
 
         const errors = (data as { errors?: unknown }).errors;
-        if (errors && typeof errors === 'object') {
+        if (errors && typeof errors === "object") {
           const entries = Object.entries(errors as Record<string, unknown>);
           const firstEntry = entries[0];
           if (firstEntry) {
             const [, errorValue] = firstEntry;
-            if (typeof errorValue === 'string' && errorValue.length > 0) {
+            if (typeof errorValue === "string" && errorValue.length > 0) {
               return errorValue;
             }
             if (Array.isArray(errorValue) && errorValue.length > 0) {
               const candidate = errorValue[0];
-              if (typeof candidate === 'string' && candidate.length > 0) {
+              if (typeof candidate === "string" && candidate.length > 0) {
                 return candidate;
               }
             }
@@ -90,42 +92,42 @@ const resolveLogsError = (maybeError: unknown) => {
     }
 
     const message = (maybeError as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) {
+    if (typeof message === "string" && message.trim().length > 0) {
       return message;
     }
   }
 
-  return 'Unable to load logs. Please try again later.';
+  return "Unable to load logs. Please try again later.";
 };
 
-type TabKey = 'playlogs' | 'matchlogs';
+type TabKey = "playlogs" | "matchlogs";
 
 const getPlayStatusClasses = (status: string) => {
   switch (status?.toLowerCase()) {
-    case 'confirmed':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
-    case 'disputed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-    case 'flagged':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
-    case 'pending':
+    case "confirmed":
+      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
+    case "disputed":
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+    case "flagged":
+      return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+    case "pending":
     default:
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
   }
 };
 
 const getMatchStatusClasses = (status: string | null | undefined) => {
   switch (status?.toLowerCase()) {
-    case 'verified':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
-    case 'disputed':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-    case 'review':
-    case 'under review':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
-    case 'pending':
+    case "verified":
+      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
+    case "disputed":
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+    case "review":
+    case "under review":
+      return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+    case "pending":
     default:
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
   }
 };
 
@@ -133,18 +135,28 @@ const MatchLogsPage = () => {
   const { user } = useAuth();
   const artistId = useMemo(() => getArtistId(), []);
 
-  const [activeTab, setActiveTab] = useState<TabKey>('playlogs');
+  const [activeTab, setActiveTab] = useState<TabKey>("playlogs");
   const [playLogs, setPlayLogs] = useState<ArtistPlayLogRecord[]>([]);
   const [matchLogs, setMatchLogs] = useState<ArtistMatchLogRecord[]>([]);
-  const [playPagination, setPlayPagination] = useState<ArtistLogPagination>(() => buildEmptyPagination());
-  const [matchPagination, setMatchPagination] = useState<ArtistLogPagination>(() => buildEmptyPagination());
-  const [playSort, setPlaySort] = useState<{ sortBy: string; sortOrder: 'asc' | 'desc' }>({
-    sortBy: 'matched_at',
-    sortOrder: 'desc',
+  const [playPagination, setPlayPagination] = useState<ArtistLogPagination>(
+    () => buildEmptyPagination(),
+  );
+  const [matchPagination, setMatchPagination] = useState<ArtistLogPagination>(
+    () => buildEmptyPagination(),
+  );
+  const [playSort, setPlaySort] = useState<{
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }>({
+    sortBy: "matched_at",
+    sortOrder: "desc",
   });
-  const [matchSort, setMatchSort] = useState<{ sortBy: string; sortOrder: 'asc' | 'desc' }>({
-    sortBy: 'matched_at',
-    sortOrder: 'desc',
+  const [matchSort, setMatchSort] = useState<{
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }>({
+    sortBy: "matched_at",
+    sortOrder: "desc",
   });
   const [playPage, setPlayPage] = useState(1);
   const [matchPage, setMatchPage] = useState(1);
@@ -180,8 +192,12 @@ const MatchLogsPage = () => {
 
       setPlayLogs(payload?.playLogs?.results ?? []);
       setMatchLogs(payload?.matchLogs?.results ?? []);
-      setPlayPagination(payload?.playLogs?.pagination ?? buildEmptyPagination());
-      setMatchPagination(payload?.matchLogs?.pagination ?? buildEmptyPagination());
+      setPlayPagination(
+        payload?.playLogs?.pagination ?? buildEmptyPagination(),
+      );
+      setMatchPagination(
+        payload?.matchLogs?.pagination ?? buildEmptyPagination(),
+      );
     } catch (fetchError) {
       setError(resolveLogsError(fetchError));
       setPlayLogs([]);
@@ -191,7 +207,15 @@ const MatchLogsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [artistId, playPage, matchPage, playSort.sortBy, playSort.sortOrder, matchSort.sortBy, matchSort.sortOrder]);
+  }, [
+    artistId,
+    playPage,
+    matchPage,
+    playSort.sortBy,
+    playSort.sortOrder,
+    matchSort.sortBy,
+    matchSort.sortOrder,
+  ]);
 
   useEffect(() => {
     if (!artistId) {
@@ -200,9 +224,10 @@ const MatchLogsPage = () => {
     loadLogs();
   }, [artistId, loadLogs]);
 
-  const activeData = activeTab === 'playlogs' ? playLogs : matchLogs;
-  const activePagination = activeTab === 'playlogs' ? playPagination : matchPagination;
-  const activeSort = activeTab === 'playlogs' ? playSort : matchSort;
+  const activeData = activeTab === "playlogs" ? playLogs : matchLogs;
+  const activePagination =
+    activeTab === "playlogs" ? playPagination : matchPagination;
+  const activeSort = activeTab === "playlogs" ? playSort : matchSort;
 
   const totalEntries = activePagination?.count ?? 0;
   const totalPages = activePagination?.total_pages ?? 0;
@@ -210,7 +235,8 @@ const MatchLogsPage = () => {
   const pageSize = activePagination?.page_size ?? ITEMS_PER_PAGE;
 
   const startEntry = totalEntries === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endEntry = totalEntries === 0 ? 0 : Math.min(currentPage * pageSize, totalEntries);
+  const endEntry =
+    totalEntries === 0 ? 0 : Math.min(currentPage * pageSize, totalEntries);
 
   const pageNumbers = useMemo(() => {
     if (!totalPages) {
@@ -218,10 +244,14 @@ const MatchLogsPage = () => {
     }
 
     const visiblePages = Math.min(5, totalPages);
-    const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (visiblePages - 1)));
-    return Array.from({ length: visiblePages }, (_, index) => startPage + index).filter(
-      (page) => page <= totalPages,
+    const startPage = Math.max(
+      1,
+      Math.min(currentPage - 2, totalPages - (visiblePages - 1)),
     );
+    return Array.from(
+      { length: visiblePages },
+      (_, index) => startPage + index,
+    ).filter((page) => page <= totalPages);
   }, [currentPage, totalPages]);
 
   const handleTabChange = (tab: TabKey) => {
@@ -229,17 +259,17 @@ const MatchLogsPage = () => {
   };
 
   const handleSort = (column: string) => {
-    if (activeTab === 'playlogs') {
+    if (activeTab === "playlogs") {
       setPlaySort((prev) => {
         if (prev.sortBy === column) {
           return {
             sortBy: column,
-            sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc',
+            sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
           };
         }
         return {
           sortBy: column,
-          sortOrder: 'asc',
+          sortOrder: "asc",
         };
       });
       setPlayPage(1);
@@ -248,12 +278,12 @@ const MatchLogsPage = () => {
         if (prev.sortBy === column) {
           return {
             sortBy: column,
-            sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc',
+            sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
           };
         }
         return {
           sortBy: column,
-          sortOrder: 'asc',
+          sortOrder: "asc",
         };
       });
       setMatchPage(1);
@@ -262,16 +292,16 @@ const MatchLogsPage = () => {
 
   const getSortIcon = (column: string) => {
     if (activeSort.sortBy !== column) {
-      return '↕️';
+      return "↕️";
     }
-    return activeSort.sortOrder === 'asc' ? '↑' : '↓';
+    return activeSort.sortOrder === "asc" ? "↑" : "↓";
   };
 
   const changePage = (page: number) => {
     if (page < 1 || (totalPages && page > totalPages)) {
       return;
     }
-    if (activeTab === 'playlogs') {
+    if (activeTab === "playlogs") {
       setPlayPage(page);
     } else {
       setMatchPage(page);
@@ -285,9 +315,12 @@ const MatchLogsPage = () => {
           <div className="rounded-full bg-indigo-100 p-3 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
             <Activity className="h-6 w-6" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">We couldn't find your artist profile</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            We couldn't find your artist profile
+          </h2>
           <p className="max-w-md text-sm text-gray-600 dark:text-gray-300">
-            Please sign out and sign in again to refresh your account data, then return to your logs.
+            Please sign out and sign in again to refresh your account data, then
+            return to your logs.
           </p>
         </div>
       </div>
@@ -300,7 +333,9 @@ const MatchLogsPage = () => {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Play & Match Logs</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+                Play & Match Logs
+              </h1>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-light leading-relaxed">
                 Track your music performance and detection across all platforms
               </p>
@@ -320,22 +355,22 @@ const MatchLogsPage = () => {
         <div className="flex justify-center mb-8">
           <div className="flex space-x-4 bg-white/60 dark:bg-slate-800/60 p-2 rounded-xl border border-gray-200 dark:border-slate-600 backdrop-blur-sm">
             <button
-              onClick={() => handleTabChange('playlogs')}
+              onClick={() => handleTabChange("playlogs")}
               className={`flex items-center space-x-2 px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                activeTab === 'playlogs'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                  : 'bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 border border-white/20 hover:border-white/40'
+                activeTab === "playlogs"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                  : "bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 border border-white/20 hover:border-white/40"
               }`}
             >
               <Activity className="w-4 h-4" />
               <span>Play Logs</span>
             </button>
             <button
-              onClick={() => handleTabChange('matchlogs')}
+              onClick={() => handleTabChange("matchlogs")}
               className={`flex items-center space-x-2 px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                activeTab === 'matchlogs'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                  : 'bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 border border-white/20 hover:border-white/40'
+                activeTab === "matchlogs"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                  : "bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 border border-white/20 hover:border-white/40"
               }`}
             >
               <Eye className="w-4 h-4" />
@@ -362,13 +397,13 @@ const MatchLogsPage = () => {
         <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl p-8 border border-gray-200/50 dark:border-slate-700/30 shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              {activeTab === 'playlogs' ? (
+              {activeTab === "playlogs" ? (
                 <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               ) : (
                 <Eye className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               )}
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                {activeTab === 'playlogs' ? 'Play Logs' : 'Match Logs'}
+                {activeTab === "playlogs" ? "Play Logs" : "Match Logs"}
               </h2>
             </div>
             <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
@@ -379,7 +414,7 @@ const MatchLogsPage = () => {
                 className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded border border-gray-200 dark:border-slate-600"
               >
                 <option value="matched_at">Date</option>
-                {activeTab === 'playlogs' ? (
+                {activeTab === "playlogs" ? (
                   <>
                     <option value="track_title">Song Title</option>
                     <option value="station_name">Station</option>
@@ -402,14 +437,16 @@ const MatchLogsPage = () => {
               <table className="min-w-full">
                 <thead className="bg-gray-50 dark:bg-slate-800">
                   <tr>
-                    {activeTab === 'playlogs' ? (
+                    {activeTab === "playlogs" ? (
                       <>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           <div className="flex items-center space-x-1">
                             <Music className="w-3 h-3 sm:w-4 sm:h-4" />
                             <span className="hidden sm:inline">Song</span>
                             <span className="sm:hidden">Song</span>
-                            <span className="text-xs">{getSortIcon('track_title')}</span>
+                            <span className="text-xs">
+                              {getSortIcon("track_title")}
+                            </span>
                           </div>
                         </th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -417,14 +454,18 @@ const MatchLogsPage = () => {
                             <Radio className="w-3 h-3 sm:w-4 sm:h-4" />
                             <span className="hidden sm:inline">Station</span>
                             <span className="sm:hidden">Station</span>
-                            <span className="text-xs">{getSortIcon('station_name')}</span>
+                            <span className="text-xs">
+                              {getSortIcon("station_name")}
+                            </span>
                           </div>
                         </th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                             <span>Played At</span>
-                            <span className="text-xs">{getSortIcon('matched_at')}</span>
+                            <span className="text-xs">
+                              {getSortIcon("matched_at")}
+                            </span>
                           </div>
                         </th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">
@@ -435,7 +476,9 @@ const MatchLogsPage = () => {
                             <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
                             <span className="hidden sm:inline">Earnings</span>
                             <span className="sm:hidden">$</span>
-                            <span className="text-xs">{getSortIcon('royalty_amount')}</span>
+                            <span className="text-xs">
+                              {getSortIcon("royalty_amount")}
+                            </span>
                           </div>
                         </th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -467,7 +510,7 @@ const MatchLogsPage = () => {
                   {isLoading && activeData.length === 0 && (
                     <tr>
                       <td
-                        colSpan={activeTab === 'playlogs' ? 6 : 5}
+                        colSpan={activeTab === "playlogs" ? 6 : 5}
                         className="px-3 sm:px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                       >
                         Loading logs...
@@ -477,30 +520,34 @@ const MatchLogsPage = () => {
                   {!isLoading && activeData.length === 0 && (
                     <tr>
                       <td
-                        colSpan={activeTab === 'playlogs' ? 6 : 5}
+                        colSpan={activeTab === "playlogs" ? 6 : 5}
                         className="px-3 sm:px-6 py-8 sm:py-16 text-center text-gray-500 dark:text-gray-400"
                       >
                         No logs found matching your filters.
                       </td>
                     </tr>
                   )}
-                  {activeTab === 'playlogs'
+                  {activeTab === "playlogs"
                     ? activeData.map((log) => (
-                        <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors duration-200">
+                        <tr
+                          key={log.id}
+                          className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors duration-200"
+                        >
                           <td className="px-3 sm:px-6 py-2 sm:py-4">
                             <div className="flex flex-col">
                               <span className="text-gray-900 dark:text-white font-medium text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
                                 {log.track_title}
                               </span>
                               <span className="text-gray-500 dark:text-gray-400 text-xs truncate">
-                                by {log.artist ?? 'Unknown Artist'}
+                                by {log.artist ?? "Unknown Artist"}
                               </span>
-                              {log.attribution_source === 'Partner' && (
+                              {log.attribution_source === "Partner" && (
                                 <span className="inline-flex items-center mt-1 px-3 py-1.5 rounded-full text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                                  Partner: {log.partner_name || 'External Catalogue'}
+                                  Partner:{" "}
+                                  {log.partner_name || "External Catalogue"}
                                 </span>
                               )}
-                              {typeof log.plays === 'number' && (
+                              {typeof log.plays === "number" && (
                                 <span className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                                   {log.plays} total plays
                                 </span>
@@ -513,7 +560,9 @@ const MatchLogsPage = () => {
                                 {log.station_name}
                               </span>
                               {log.source && (
-                                <span className="text-[11px] text-gray-500 dark:text-gray-400">{log.source}</span>
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                  {log.source}
+                                </span>
                               )}
                             </div>
                           </td>
@@ -523,14 +572,14 @@ const MatchLogsPage = () => {
                             </div>
                           </td>
                           <td className="px-3 sm:px-6 py-2 sm:py-4 hidden sm:table-cell text-gray-900 dark:text-white text-xs sm:text-sm">
-                            {log.duration ?? '—'}
+                            {log.duration ?? "—"}
                           </td>
                           <td className="px-3 sm:px-6 py-2 sm:py-4">
                             <div className="flex flex-col">
                               <span className="text-gray-900 dark:text-white font-semibold text-xs sm:text-sm">
                                 {formatCurrency(log.royalty_amount ?? 0)}
                               </span>
-                              {typeof log.confidence === 'number' && (
+                              {typeof log.confidence === "number" && (
                                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
                                   Confidence {Math.round(log.confidence)}%
                                 </span>
@@ -549,14 +598,17 @@ const MatchLogsPage = () => {
                         </tr>
                       ))
                     : activeData.map((log) => (
-                        <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors duration-200">
+                        <tr
+                          key={log.id}
+                          className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors duration-200"
+                        >
                           <td className="px-3 sm:px-6 py-2 sm:py-4">
                             <div className="flex flex-col">
                               <span className="text-gray-900 dark:text-white font-medium text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
                                 {log.song}
                               </span>
                               <span className="text-gray-500 dark:text-gray-400 text-xs truncate">
-                                by {log.artist ?? 'Unknown Artist'}
+                                by {log.artist ?? "Unknown Artist"}
                               </span>
                               {log.match_type && (
                                 <span className="inline-flex items-center mt-1 px-3 py-1.5 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
@@ -564,7 +616,9 @@ const MatchLogsPage = () => {
                                 </span>
                               )}
                               {log.source && (
-                                <span className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{log.source}</span>
+                                <span className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                  {log.source}
+                                </span>
                               )}
                             </div>
                           </td>
@@ -583,7 +637,9 @@ const MatchLogsPage = () => {
                               <div className="w-8 sm:w-12 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 sm:h-2">
                                 <div
                                   className="bg-gradient-to-r from-blue-500 to-indigo-500 h-1.5 sm:h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${Math.min(100, Math.max(0, Math.round(log.confidence ?? 0)))}%` }}
+                                  style={{
+                                    width: `${Math.min(100, Math.max(0, Math.round(log.confidence ?? 0)))}%`,
+                                  }}
                                 ></div>
                               </div>
                               <span className="text-gray-900 dark:text-white font-medium text-xs sm:text-sm">
@@ -597,7 +653,7 @@ const MatchLogsPage = () => {
                                 log.status,
                               )}`}
                             >
-                              {log.status ?? 'Pending'}
+                              {log.status ?? "Pending"}
                             </span>
                           </td>
                         </tr>
@@ -610,10 +666,19 @@ const MatchLogsPage = () => {
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50/30 dark:bg-slate-800/30 -mx-8 px-8 py-4 rounded-b-2xl">
               <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                Showing{' '}
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">{startEntry}</span> to{' '}
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">{endEntry}</span> of{' '}
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">{totalEntries}</span> entries
+                Showing{" "}
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                  {startEntry}
+                </span>{" "}
+                to{" "}
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                  {endEntry}
+                </span>{" "}
+                of{" "}
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                  {totalEntries}
+                </span>{" "}
+                entries
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -621,8 +686,18 @@ const MatchLogsPage = () => {
                   disabled={currentPage === 1}
                   className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
                   </svg>
                   <span>Previous</span>
                 </button>
@@ -634,8 +709,8 @@ const MatchLogsPage = () => {
                       onClick={() => changePage(pageNum)}
                       className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-sm ${
                         currentPage === pageNum
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md transform scale-105'
-                          : 'text-gray-600 dark:text-gray-400 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md'
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md transform scale-105"
+                          : "text-gray-600 dark:text-gray-400 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md"
                       }`}
                     >
                       {pageNum}
@@ -649,8 +724,18 @@ const MatchLogsPage = () => {
                   className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                 >
                   <span>Next</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </div>

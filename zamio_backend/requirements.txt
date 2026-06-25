@@ -1,3 +1,6 @@
+# Static file serving
+whitenoise>=6.7.0,<7.0
+
 # Core Django and Web Framework
 Django>=5.1.7,<5.2
 djangorestframework>=3.14.0,<4.0

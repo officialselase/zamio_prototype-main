@@ -104,8 +104,8 @@ class StreamMonitor:
             # Get all fingerprints from database for matching
             all_fingerprints = self._get_all_fingerprints()
             
-            # Perform matching
-            match_result = simple_match(samples, sr, all_fingerprints)
+            # Perform matching with a lower threshold for shorter stream chunks
+            match_result = simple_match(samples, sr, all_fingerprints, min_match_threshold=5)
             
             if match_result["match"]:
                 # Log the match

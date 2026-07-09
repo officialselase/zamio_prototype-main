@@ -199,7 +199,7 @@ def upload_audio_match2222(request):
             for fp in Fingerprint.objects.select_related('track').all()
         ]
 
-        match_result = simple_match(samples, sr, fingerprints)
+        match_result = simple_match(samples, sr, fingerprints, min_match_threshold=5)
 
         if match_result["match"]:
             track = Track.objects.get(id=match_result["song_id"])
@@ -589,8 +589,20 @@ def upload_audio_match(request):
 
             try:
                 logger.info(f"Starting fingerprint matching with {len(samples)} samples")
-                result = simple_match_mp3(samples, sr, fingerprints)
+                match_threshold = 5
+                result = simple_match_mp3(samples, sr, fingerprints, min_match_threshold=match_threshold)
                 logger.info(f"Fingerprint matching completed: {result}")
+
+                if not result.get('match') and result.get('reason') == 'Below match threshold':
+                    fallback_threshold = 3
+                    logger.info(f"Retrying fingerprint matching with lower threshold={fallback_threshold}")
+                    fallback_result = simple_match_mp3(samples, sr, fingerprints, min_match_threshold=fallback_threshold)
+                    logger.info(f"Fallback fingerprint matching completed: {fallback_result}")
+                    if fallback_result.get('match'):
+                        result = fallback_result
+                        match_threshold = fallback_threshold
+
+                detection_metadata['match_threshold'] = match_threshold
                 processing_finished = timezone.now()
                 processing_time_ms = int((processing_finished - processing_started).total_seconds() * 1000)
             except Exception as e:

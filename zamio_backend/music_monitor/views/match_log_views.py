@@ -571,6 +571,8 @@ def upload_audio_match(request):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
+            detection_metadata = {}
+
             # Collect all known fingerprints with caching
             from django.core.cache import cache
             
@@ -622,7 +624,7 @@ def upload_audio_match(request):
             except Exception as e:
                 logger.warning(f"Failed to cleanup temp files: {e}")
 
-            detection_metadata = {
+            detection_metadata.update({
                 'chunk_id': chunk_id,
                 'station_id': station.station_id,
                 'capture_metadata': metadata,
@@ -635,7 +637,7 @@ def upload_audio_match(request):
                 'match_engine': 'simple_match_mp3',
                 'uploader_user_id': request.user.id,
                 'upload_ip': ip_address,
-            }
+            })
 
             if result['match']:
                 track = Track.objects.get(id=result['song_id'])

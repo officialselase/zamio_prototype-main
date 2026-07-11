@@ -16,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _baseUrlCtrl =
-      TextEditingController(text: 'http://192.168.8.101:8000/');
+      TextEditingController(text: 'https://api.2.24.15.82.sslip.io/');
   bool _loading = false;
   String? _error;
 

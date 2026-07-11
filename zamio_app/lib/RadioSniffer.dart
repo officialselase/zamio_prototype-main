@@ -56,7 +56,7 @@ class _StatusPageState extends State<StatusPage>
   String _authToken = '';
   String get _uploadUrl {
     final base =
-        _backendBase.isNotEmpty ? _backendBase : 'http://192.168.8.101:8000/';
+        _backendBase.isNotEmpty ? _backendBase : 'https://api.2.24.15.82.sslip.io/';
     final normalized = base.endsWith('/') ? base : (base + '/');
     return normalized + 'api/music-monitor/stream/upload/';
   }
